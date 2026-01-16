@@ -1,0 +1,226 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom base styles */
+@layer base {
+  * {
+    @apply border-ink-200;
+  }
+
+  html {
+    @apply antialiased;
+    font-feature-settings: "kern" 1, "liga" 1;
+  }
+
+  body {
+    @apply bg-parchment-100 text-ink-900 font-body;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+  }
+
+  ::selection {
+    @apply bg-accent-gold/30 text-ink-950;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-parchment-200;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-ink-300 rounded-full;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-ink-400;
+  }
+}
+
+/* Component styles */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2
+           font-body font-medium text-sm rounded-lg
+           transition-all duration-200 ease-out
+           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-parchment-100;
+  }
+
+  .btn-primary {
+    @apply btn bg-ink-900 text-parchment-50
+           hover:bg-ink-800 active:bg-ink-950
+           focus:ring-ink-500
+           shadow-paper hover:shadow-paper-hover;
+  }
+
+  .btn-secondary {
+    @apply btn bg-parchment-200 text-ink-800
+           hover:bg-parchment-300 active:bg-parchment-400
+           focus:ring-ink-300
+           border border-ink-200;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-ink-700
+           hover:bg-parchment-200 active:bg-parchment-300
+           focus:ring-ink-300;
+  }
+
+  .btn-danger {
+    @apply btn bg-accent-burgundy text-parchment-50
+           hover:bg-accent-burgundy/90 active:bg-accent-burgundy
+           focus:ring-accent-burgundy/50;
+  }
+
+  .btn-icon {
+    @apply p-2 rounded-lg transition-all duration-200
+           text-ink-600 hover:text-ink-900 hover:bg-parchment-200
+           focus:outline-none focus:ring-2 focus:ring-ink-300;
+  }
+
+  .input {
+    @apply w-full px-4 py-2.5
+           bg-parchment-50 text-ink-900 placeholder-ink-400
+           border border-ink-200 rounded-lg
+           font-body text-sm
+           transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-accent-gold/40 focus:border-accent-gold
+           hover:border-ink-300;
+  }
+
+  .input-lg {
+    @apply input text-base py-3;
+  }
+
+  .textarea {
+    @apply input min-h-[100px] resize-y;
+  }
+
+  .label {
+    @apply block text-xs font-medium text-ink-600 uppercase tracking-wider mb-1.5;
+  }
+
+  .card {
+    @apply bg-parchment-50 rounded-xl border border-ink-100
+           shadow-paper transition-all duration-300 ease-out;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-paper-hover hover:border-ink-200
+           hover:-translate-y-0.5 cursor-pointer;
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg
+           text-ink-700 font-medium text-sm
+           transition-all duration-200
+           hover:bg-parchment-200 hover:text-ink-900;
+  }
+
+  .sidebar-item-active {
+    @apply sidebar-item bg-parchment-300 text-ink-900;
+  }
+
+  .tag {
+    @apply inline-flex items-center gap-1 px-2.5 py-1
+           text-xs font-medium rounded-full
+           transition-all duration-200;
+  }
+
+  .badge {
+    @apply inline-flex items-center justify-center
+           min-w-[20px] h-5 px-1.5
+           text-xs font-medium rounded-full
+           bg-ink-200 text-ink-700;
+  }
+
+  .divider {
+    @apply h-px bg-gradient-to-r from-transparent via-ink-200 to-transparent;
+  }
+
+  .divider-vertical {
+    @apply w-px bg-gradient-to-b from-transparent via-ink-200 to-transparent;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .glass {
+    @apply bg-parchment-50/80 backdrop-blur-sm;
+  }
+
+  .paper-edge {
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.5),
+      0 1px 3px rgba(45, 42, 40, 0.08);
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Staggered animation delays */
+  .stagger-1 { animation-delay: 50ms; }
+  .stagger-2 { animation-delay: 100ms; }
+  .stagger-3 { animation-delay: 150ms; }
+  .stagger-4 { animation-delay: 200ms; }
+  .stagger-5 { animation-delay: 250ms; }
+  .stagger-6 { animation-delay: 300ms; }
+  .stagger-7 { animation-delay: 350ms; }
+  .stagger-8 { animation-delay: 400ms; }
+}
+
+/* Typography refinements */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-display font-semibold tracking-tight text-ink-900;
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  @apply outline-none ring-2 ring-accent-gold ring-offset-2 ring-offset-parchment-100;
+}
+
+/* Prevent text selection on interactive elements */
+button, [role="button"] {
+  user-select: none;
+}
+
+/* Print styles */
+@media print {
+  body {
+    @apply bg-white;
+  }
+}
