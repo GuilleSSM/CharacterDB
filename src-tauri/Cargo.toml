@@ -1,5 +1,5 @@
 [package]
-name = "character-database"
+name = "CharacterDB"
 version = "0.1.0"
 description = "A character database for writers"
 authors = ["you"]
