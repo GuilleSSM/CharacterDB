@@ -180,13 +180,18 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateCharacter: async (id, character) => {
-    await db.updateCharacter(id, character);
-    await get().refreshCharacters();
+    try {
+      await db.updateCharacter(id, character);
+      await get().refreshCharacters();
 
-    // Refresh selected character if it's the one being updated
-    const { selectedCharacter } = get();
-    if (selectedCharacter?.id === id) {
-      await get().selectCharacter(id);
+      // Refresh selected character if it's the one being updated
+      const { selectedCharacter } = get();
+      if (selectedCharacter?.id === id) {
+        await get().selectCharacter(id);
+      }
+    } catch (error) {
+      console.error("Failed to update character:", error);
+      throw error;
     }
   },
 

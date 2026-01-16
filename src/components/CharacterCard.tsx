@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import { useStore } from "../stores/useStore";
 import type { Character } from "../types";
 import {
@@ -48,10 +49,14 @@ export function CharacterCard({ character }: CharacterCardProps) {
     archiveCharacter(character.id, true);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowMenu(false);
-    if (confirm(`Delete "${character.name}"? This cannot be undone.`)) {
+    const confirmed = await confirm(
+      `Delete "${character.name}"? This cannot be undone.`,
+      { title: "Delete Character", kind: "warning" }
+    );
+    if (confirmed) {
       deleteCharacter(character.id);
     }
   };

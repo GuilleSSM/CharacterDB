@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "../stores/useStore";
+import { getModifierKey } from "../lib/platform";
 import {
   MagnifyingGlassIcon,
   Squares2X2Icon,
@@ -143,7 +144,7 @@ export function Header() {
           ) : (
             <kbd className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono
                            text-ink-400 bg-parchment-200 rounded border border-ink-200">
-              <span className="text-xs">⌘</span>K
+              <span className="text-xs">{getModifierKey()}</span>K
             </kbd>
           )}
         </div>
