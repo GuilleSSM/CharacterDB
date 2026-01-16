@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useStore } from "../stores/useStore";
+import { formatShortcut } from "../lib/platform";
 import { UsersIcon, PlusIcon, SparklesIcon } from "./icons";
 
 export function EmptyState() {
@@ -109,7 +110,7 @@ export function EmptyState() {
         {[
           {
             title: "Quick Add",
-            description: "Press ⌘+N to quickly create a new character",
+            description: `Press ${formatShortcut("N")} to quickly create a new character`,
           },
           {
             title: "Organize",
@@ -117,7 +118,7 @@ export function EmptyState() {
           },
           {
             title: "Search",
-            description: "Press ⌘+K to instantly find any character",
+            description: `Press ${formatShortcut("K")} to instantly find any character`,
           },
         ].map((tip, index) => (
           <motion.div

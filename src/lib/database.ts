@@ -310,7 +310,20 @@ export async function updateCharacter(
   for (const field of updateableFields) {
     if (field in character) {
       fields.push(`${field} = ?`);
-      values.push(character[field as keyof Character] ?? null);
+      let value: unknown = character[field as keyof Character];
+      // Convert empty strings to null for optional fields (except name which is required)
+      if (value === "" && field !== "name") {
+        value = null;
+      }
+      // Convert undefined to null
+      if (value === undefined) {
+        value = null;
+      }
+      // Convert booleans to integers for SQLite
+      if (typeof value === "boolean") {
+        value = value ? 1 : 0;
+      }
+      values.push(value);
     }
   }
 

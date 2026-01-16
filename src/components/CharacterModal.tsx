@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import { useStore } from "../stores/useStore";
+import { pickAndSaveImage } from "../lib/images";
 import type { CharacterWithRelations } from "../types";
 import { CHARACTER_ROLES } from "../types";
 import {
@@ -43,7 +45,7 @@ export function CharacterModal() {
 
   const [activeTab, setActiveTab] = useState<TabId>("basic");
   const [localData, setLocalData] = useState<Partial<CharacterWithRelations>>({});
-  const [isDirty, setIsDirty] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState<Partial<CharacterWithRelations>>({});
   const [showProjectPicker, setShowProjectPicker] = useState(false);
   const [showTagPicker, setShowTagPicker] = useState(false);
 
@@ -51,26 +53,30 @@ export function CharacterModal() {
   useEffect(() => {
     if (selectedCharacter) {
       setLocalData(selectedCharacter);
-      setIsDirty(false);
+      setPendingChanges({});
     }
   }, [selectedCharacter]);
 
-  // Auto-save with debounce
+  // Auto-save with debounce - only save the fields that actually changed
   useEffect(() => {
-    if (!isDirty || !selectedCharacter) return;
+    if (Object.keys(pendingChanges).length === 0 || !selectedCharacter) return;
 
-    const timeout = setTimeout(() => {
-      updateCharacter(selectedCharacter.id, localData);
-      setIsDirty(false);
+    const timeout = setTimeout(async () => {
+      try {
+        await updateCharacter(selectedCharacter.id, pendingChanges);
+        setPendingChanges({});
+      } catch (error) {
+        console.error("Failed to save character:", error);
+      }
     }, 500);
 
     return () => clearTimeout(timeout);
-  }, [localData, isDirty, selectedCharacter, updateCharacter]);
+  }, [pendingChanges, selectedCharacter, updateCharacter]);
 
   const handleChange = useCallback(
     (field: keyof CharacterWithRelations, value: unknown) => {
       setLocalData((prev) => ({ ...prev, [field]: value }));
-      setIsDirty(true);
+      setPendingChanges((prev) => ({ ...prev, [field]: value }));
     },
     []
   );
@@ -79,9 +85,13 @@ export function CharacterModal() {
     setCharacterModalOpen(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedCharacter) return;
-    if (confirm(`Delete "${selectedCharacter.name}"? This cannot be undone.`)) {
+    const confirmed = await confirm(
+      `Delete "${selectedCharacter.name}"? This cannot be undone.`,
+      { title: "Delete Character", kind: "warning" }
+    );
+    if (confirmed) {
       deleteCharacter(selectedCharacter.id);
     }
   };
@@ -94,6 +104,17 @@ export function CharacterModal() {
   const handleToggleFavorite = () => {
     if (!selectedCharacter) return;
     toggleFavorite(selectedCharacter.id);
+  };
+
+  const handlePortraitUpload = async () => {
+    try {
+      const imagePath = await pickAndSaveImage();
+      if (imagePath) {
+        handleChange("portrait_path", imagePath);
+      }
+    } catch (error) {
+      console.error("Failed to upload portrait:", error);
+    }
   };
 
   if (!selectedCharacter) return null;
@@ -142,8 +163,11 @@ export function CharacterModal() {
                   <UserIcon className="w-10 h-10 text-ink-400" />
                 </div>
               )}
-              <button className="absolute inset-0 flex items-center justify-center bg-ink-900/60
-                                 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={handlePortraitUpload}
+                className="absolute inset-0 flex items-center justify-center bg-ink-900/60
+                           rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+              >
                 <PhotoIcon className="w-6 h-6 text-parchment-50" />
               </button>
             </div>
@@ -400,7 +424,7 @@ export function CharacterModal() {
               Created {new Date(character.created_at).toLocaleDateString()}
             </span>
             <span>
-              {isDirty ? "Saving..." : "All changes saved"}
+              {Object.keys(pendingChanges).length > 0 ? "Saving..." : "All changes saved"}
             </span>
           </footer>
         </motion.div>
@@ -590,7 +614,7 @@ function PersonalityTab({ character, onChange }: TabProps) {
             <span
               key={index}
               className="inline-flex items-center gap-1 px-3 py-1.5 text-sm
-                        bg-parchment-200 text-ink-700 rounded-full"
+                        bg-parchment-200 dark:bg-ink-800 text-ink-700 dark:text-parchment-200 rounded-full"
             >
               {trait}
               <button

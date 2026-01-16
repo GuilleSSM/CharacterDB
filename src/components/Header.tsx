@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "../stores/useStore";
+import { getModifierKey } from "../lib/platform";
 import {
   MagnifyingGlassIcon,
   Squares2X2Icon,
@@ -114,11 +115,11 @@ export function Header() {
       {/* Search */}
       <div className="relative flex-1 max-w-md">
         <div
-          className={`flex items-center gap-2 px-4 py-2.5 bg-parchment-100 border rounded-xl
+          className={`flex items-center gap-2 px-4 py-2.5 bg-parchment-100 dark:bg-ink-900 border rounded-xl
                       transition-all duration-200 ${
                         searchFocused
                           ? "border-accent-gold ring-2 ring-accent-gold/20"
-                          : "border-ink-200 hover:border-ink-300"
+                          : "border-ink-200 dark:border-ink-700 hover:border-ink-300 dark:hover:border-ink-600"
                       }`}
         >
           <MagnifyingGlassIcon className="w-4 h-4 text-ink-400 flex-shrink-0" />
@@ -130,20 +131,20 @@ export function Header() {
             onChange={(e) => setFilter({ search: e.target.value })}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
-            className="flex-1 bg-transparent text-sm text-ink-900 placeholder-ink-400
+            className="flex-1 bg-transparent text-sm text-ink-900 dark:text-parchment-50 placeholder-ink-400 dark:placeholder-ink-500
                        focus:outline-none"
           />
           {filter.search ? (
             <button
               onClick={() => setFilter({ search: "" })}
-              className="p-0.5 hover:bg-ink-200 rounded transition-colors"
+              className="p-0.5 hover:bg-ink-200 dark:hover:bg-ink-700 rounded transition-colors"
             >
-              <XMarkIcon className="w-4 h-4 text-ink-500" />
+              <XMarkIcon className="w-4 h-4 text-ink-500 dark:text-ink-400" />
             </button>
           ) : (
             <kbd className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono
-                           text-ink-400 bg-parchment-200 rounded border border-ink-200">
-              <span className="text-xs">⌘</span>K
+                           text-ink-400 dark:text-ink-500 bg-parchment-200 dark:bg-ink-800 rounded border border-ink-200 dark:border-ink-700">
+              <span className="text-xs">{getModifierKey()}</span>K
             </kbd>
           )}
         </div>
@@ -154,7 +155,7 @@ export function Header() {
         <div className="flex items-center gap-2">
           <span
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
-                       rounded-full bg-parchment-200 text-ink-700"
+                       rounded-full bg-parchment-200 dark:bg-ink-800 text-ink-700 dark:text-parchment-300"
           >
             <span
               className="w-2 h-2 rounded-full"
@@ -163,7 +164,7 @@ export function Header() {
             {currentProject.name}
             <button
               onClick={() => setFilter({ projectId: null })}
-              className="ml-1 hover:text-ink-900"
+              className="ml-1 hover:text-ink-900 dark:hover:text-parchment-100"
             >
               <XMarkIcon className="w-3 h-3" />
             </button>
@@ -193,8 +194,8 @@ export function Header() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute right-0 top-full mt-2 w-48 bg-parchment-50 rounded-xl
-                         shadow-paper-hover border border-ink-100 overflow-hidden z-20"
+              className="absolute right-0 top-full mt-2 w-48 bg-parchment-50 dark:bg-ink-900 rounded-xl
+                         shadow-paper-hover border border-ink-100 dark:border-ink-700 overflow-hidden z-20"
             >
               <div className="p-1">
                 {sortOptions.map((option) => (
@@ -206,15 +207,15 @@ export function Header() {
                     }}
                     className={`w-full px-3 py-2 text-left text-sm rounded-lg transition-colors ${
                       sort.field === option.field
-                        ? "bg-parchment-200 text-ink-900"
-                        : "text-ink-700 hover:bg-parchment-100"
+                        ? "bg-parchment-200 dark:bg-ink-800 text-ink-900 dark:text-parchment-100"
+                        : "text-ink-700 dark:text-parchment-300 hover:bg-parchment-100 dark:hover:bg-ink-800"
                     }`}
                   >
                     {option.label}
                   </button>
                 ))}
               </div>
-              <div className="border-t border-ink-100 p-1">
+              <div className="border-t border-ink-100 dark:border-ink-700 p-1">
                 <button
                   onClick={() => {
                     setSort({
@@ -222,8 +223,8 @@ export function Header() {
                     });
                     setShowSortMenu(false);
                   }}
-                  className="w-full px-3 py-2 text-left text-sm text-ink-700 rounded-lg
-                             hover:bg-parchment-100 transition-colors"
+                  className="w-full px-3 py-2 text-left text-sm text-ink-700 dark:text-parchment-300 rounded-lg
+                             hover:bg-parchment-100 dark:hover:bg-ink-800 transition-colors"
                 >
                   {sort.direction === "asc" ? "↑ Ascending" : "↓ Descending"}
                 </button>
@@ -234,13 +235,13 @@ export function Header() {
       </div>
 
       {/* View mode toggle */}
-      <div className="flex items-center bg-parchment-200 rounded-lg p-1">
+      <div className="flex items-center bg-parchment-200 dark:bg-ink-800 rounded-lg p-1">
         <button
           onClick={() => setViewMode("grid")}
           className={`p-2 rounded-md transition-all duration-200 ${
             viewMode === "grid"
-              ? "bg-parchment-50 text-ink-900 shadow-sm"
-              : "text-ink-500 hover:text-ink-700"
+              ? "bg-parchment-50 dark:bg-ink-700 text-ink-900 dark:text-parchment-100 shadow-sm"
+              : "text-ink-500 dark:text-ink-400 hover:text-ink-700 dark:hover:text-parchment-200"
           }`}
           aria-label="Grid view"
         >
@@ -250,8 +251,8 @@ export function Header() {
           onClick={() => setViewMode("list")}
           className={`p-2 rounded-md transition-all duration-200 ${
             viewMode === "list"
-              ? "bg-parchment-50 text-ink-900 shadow-sm"
-              : "text-ink-500 hover:text-ink-700"
+              ? "bg-parchment-50 dark:bg-ink-700 text-ink-900 dark:text-parchment-100 shadow-sm"
+              : "text-ink-500 dark:text-ink-400 hover:text-ink-700 dark:hover:text-parchment-200"
           }`}
           aria-label="List view"
         >

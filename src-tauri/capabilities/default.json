@@ -5,6 +5,7 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
+    "core:path:default",
     "dialog:default",
     "dialog:allow-open",
     "dialog:allow-save",
@@ -13,6 +14,28 @@
     "fs:default",
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
+    "fs:allow-read-file",
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [{ "path": "$APPDATA/**" }]
+    },
+    "fs:allow-copy-file",
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [{ "path": "$APPDATA/**" }]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "$APPDATA/**" }]
+    },
+    {
+      "identifier": "fs:allow-read",
+      "allow": [{ "path": "$APPDATA/**" }, { "path": "$PICTURE/**" }, { "path": "$HOME/**" }]
+    },
+    {
+      "identifier": "fs:allow-write",
+      "allow": [{ "path": "$APPDATA/**" }]
+    },
     "sql:default",
     "sql:allow-load",
     "sql:allow-execute",

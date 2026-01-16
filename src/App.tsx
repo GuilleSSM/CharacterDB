@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useStore } from "./stores/useStore";
+import { isMac } from "./lib/platform";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { CharacterGrid } from "./components/CharacterGrid";
@@ -21,7 +22,28 @@ function App() {
     isProjectModalOpen,
     isTagModalOpen,
     theme,
+    createCharacter,
+    selectCharacter,
   } = useStore();
+
+  // Handle Cmd/Ctrl+N to create a new character
+  const handleKeyDown = useCallback(
+    async (event: KeyboardEvent) => {
+      const modifier = isMac() ? event.metaKey : event.ctrlKey;
+
+      if (modifier && event.key === "n") {
+        event.preventDefault();
+        const id = await createCharacter({ name: "New Character" });
+        await selectCharacter(id);
+      }
+    },
+    [createCharacter, selectCharacter]
+  );
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   useEffect(() => {
     loadInitialData();
