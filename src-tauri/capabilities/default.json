@@ -15,10 +15,19 @@
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
     "fs:allow-read-file",
-    "fs:allow-write-file",
-    "fs:allow-mkdir",
-    "fs:allow-exists",
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [{ "path": "$APPDATA/**" }]
+    },
     "fs:allow-copy-file",
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [{ "path": "$APPDATA/**" }]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "$APPDATA/**" }]
+    },
     {
       "identifier": "fs:allow-read",
       "allow": [{ "path": "$APPDATA/**" }, { "path": "$PICTURE/**" }, { "path": "$HOME/**" }]
