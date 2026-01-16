@@ -614,7 +614,7 @@ function PersonalityTab({ character, onChange }: TabProps) {
             <span
               key={index}
               className="inline-flex items-center gap-1 px-3 py-1.5 text-sm
-                        bg-parchment-200 text-ink-700 rounded-full"
+                        bg-parchment-200 dark:bg-ink-800 text-ink-700 dark:text-parchment-200 rounded-full"
             >
               {trait}
               <button
