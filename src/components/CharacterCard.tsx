@@ -65,9 +65,9 @@ export function CharacterCard({ character }: CharacterCardProps) {
       case "supporting":
         return "bg-accent-forest/20 text-accent-forest";
       case "minor":
-        return "bg-ink-200 text-ink-600";
+        return "bg-ink-200 text-ink-600 dark:bg-ink-700 dark:text-parchment-300";
       default:
-        return "bg-ink-100 text-ink-500";
+        return "bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-parchment-400";
     }
   };
 
@@ -88,8 +88,8 @@ export function CharacterCard({ character }: CharacterCardProps) {
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-24 h-24 rounded-full bg-parchment-100/50 flex items-center justify-center">
-              <UserIcon className="w-12 h-12 text-ink-300" />
+            <div className="w-24 h-24 rounded-full bg-parchment-100/50 dark:bg-ink-800/50 flex items-center justify-center">
+              <UserIcon className="w-12 h-12 text-ink-300 dark:text-ink-600" />
             </div>
           </div>
         )}
@@ -151,22 +151,22 @@ export function CharacterCard({ character }: CharacterCardProps) {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: -8 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    className="absolute right-0 top-full mt-1 w-40 bg-parchment-50 rounded-xl
-                              shadow-paper-lifted border border-ink-100 overflow-hidden z-20"
+                    className="absolute right-0 top-full mt-1 w-40 bg-parchment-50 dark:bg-ink-900 rounded-xl
+                              shadow-paper-lifted border border-ink-100 dark:border-ink-800 overflow-hidden z-20"
                   >
                     <div className="p-1">
                       <button
                         onClick={handleDuplicate}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-700
-                                  rounded-lg hover:bg-parchment-100 transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-700 dark:text-parchment-200
+                                  rounded-lg hover:bg-parchment-100 dark:hover:bg-ink-800 transition-colors"
                       >
                         <DocumentDuplicateIcon className="w-4 h-4" />
                         Duplicate
                       </button>
                       <button
                         onClick={handleArchive}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-700
-                                  rounded-lg hover:bg-parchment-100 transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-700 dark:text-parchment-200
+                                  rounded-lg hover:bg-parchment-100 dark:hover:bg-ink-800 transition-colors"
                       >
                         <ArchiveBoxIcon className="w-4 h-4" />
                         Archive
@@ -210,14 +210,14 @@ export function CharacterCard({ character }: CharacterCardProps) {
       <div className="p-4 space-y-2">
         {/* Physical traits */}
         {(character.age || character.gender || character.species) && (
-          <div className="flex flex-wrap gap-2 text-xs text-ink-600">
+          <div className="flex flex-wrap gap-2 text-xs text-ink-600 dark:text-ink-400">
             {character.age && <span>{character.age}</span>}
             {character.age && (character.gender || character.species) && (
-              <span className="text-ink-300">·</span>
+              <span className="text-ink-300 dark:text-ink-600">·</span>
             )}
             {character.gender && <span>{character.gender}</span>}
             {character.gender && character.species && (
-              <span className="text-ink-300">·</span>
+              <span className="text-ink-300 dark:text-ink-600">·</span>
             )}
             {character.species && <span>{character.species}</span>}
           </div>
@@ -229,8 +229,8 @@ export function CharacterCard({ character }: CharacterCardProps) {
             {character.personality_traits.slice(0, 3).map((trait, index) => (
               <span
                 key={index}
-                className="px-2 py-0.5 text-[10px] font-medium text-ink-600
-                          bg-parchment-200 rounded-full"
+                className="px-2 py-0.5 text-[10px] font-medium text-ink-600 dark:text-parchment-200
+                          bg-parchment-200 dark:bg-ink-800 rounded-full"
               >
                 {trait}
               </span>

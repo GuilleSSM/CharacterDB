@@ -20,18 +20,27 @@ function App() {
     isCharacterModalOpen,
     isProjectModalOpen,
     isTagModalOpen,
+    theme,
   } = useStore();
 
   useEffect(() => {
     loadInitialData();
   }, [loadInitialData]);
 
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme]);
+
   if (isLoading) {
     return <LoadingScreen />;
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-parchment-100">
+    <div className="flex h-screen overflow-hidden bg-parchment-100 dark:bg-ink-950 text-ink-900 dark:text-parchment-100">
       {/* Sidebar */}
       <Sidebar />
 

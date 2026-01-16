@@ -11,6 +11,9 @@ import type {
 import * as db from "../lib/database";
 
 interface AppState {
+  // Theme
+  theme: "light" | "dark";
+
   // Data
   characters: Character[];
   projects: Project[];
@@ -73,10 +76,14 @@ interface AppState {
   searchCharacters: (query: string) => Promise<Character[]>;
   exportData: () => Promise<string>;
   importData: (json: string) => Promise<void>;
+  
+  toggleTheme: () => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
   // Initial state
+  theme: (localStorage.getItem("theme") as "light" | "dark") || 
+         (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
   characters: [],
   projects: [],
   tags: [],
@@ -331,5 +338,12 @@ export const useStore = create<AppState>((set, get) => ({
     const data = JSON.parse(json);
     await db.importData(data);
     await get().loadInitialData();
+  },
+
+  toggleTheme: () => {
+    const { theme } = get();
+    const newTheme = theme === "light" ? "dark" : "light";
+    localStorage.setItem("theme", newTheme);
+    set({ theme: newTheme });
   },
 }));

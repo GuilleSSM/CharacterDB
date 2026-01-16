@@ -5,7 +5,7 @@
 /* Custom base styles */
 @layer base {
   * {
-    @apply border-ink-200;
+    @apply border-ink-200 dark:border-ink-800;
   }
 
   html {
@@ -14,12 +14,12 @@
   }
 
   body {
-    @apply bg-parchment-100 text-ink-900 font-body;
+    @apply bg-parchment-100 dark:bg-ink-950 text-ink-900 dark:text-parchment-100 font-body transition-colors duration-200;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
   }
 
   ::selection {
-    @apply bg-accent-gold/30 text-ink-950;
+    @apply bg-accent-gold/30 dark:bg-accent-gold/20 text-ink-950 dark:text-parchment-50;
   }
 
   /* Custom scrollbar */
@@ -29,17 +29,17 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-parchment-200;
+    @apply bg-parchment-200 dark:bg-ink-900;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-ink-300 rounded-full;
+    @apply bg-ink-300 dark:bg-ink-600 rounded-full;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-ink-400;
+    @apply bg-ink-400 dark:bg-ink-500;
   }
 }
 
@@ -49,27 +49,27 @@
     @apply inline-flex items-center justify-center gap-2 px-4 py-2
            font-body font-medium text-sm rounded-lg
            transition-all duration-200 ease-out
-           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-parchment-100;
+           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-parchment-100 dark:focus:ring-offset-ink-950;
   }
 
   .btn-primary {
-    @apply btn bg-ink-900 text-parchment-50
-           hover:bg-ink-800 active:bg-ink-950
-           focus:ring-ink-500
+    @apply btn bg-ink-900 dark:bg-parchment-200 text-parchment-50 dark:text-ink-900
+           hover:bg-ink-800 dark:hover:bg-parchment-300 active:bg-ink-950 dark:active:bg-parchment-400
+           focus:ring-ink-500 dark:focus:ring-parchment-400
            shadow-paper hover:shadow-paper-hover;
   }
 
   .btn-secondary {
-    @apply btn bg-parchment-200 text-ink-800
-           hover:bg-parchment-300 active:bg-parchment-400
-           focus:ring-ink-300
-           border border-ink-200;
+    @apply btn bg-parchment-200 dark:bg-ink-800 text-ink-800 dark:text-parchment-200
+           hover:bg-parchment-300 dark:hover:bg-ink-700 active:bg-parchment-400 dark:active:bg-ink-600
+           focus:ring-ink-300 dark:focus:ring-ink-500
+           border border-ink-200 dark:border-ink-700;
   }
 
   .btn-ghost {
-    @apply btn bg-transparent text-ink-700
-           hover:bg-parchment-200 active:bg-parchment-300
-           focus:ring-ink-300;
+    @apply btn bg-transparent text-ink-700 dark:text-parchment-300
+           hover:bg-parchment-200 dark:hover:bg-ink-800 active:bg-parchment-300 dark:active:bg-ink-700
+           focus:ring-ink-300 dark:focus:ring-ink-500;
   }
 
   .btn-danger {
@@ -80,18 +80,22 @@
 
   .btn-icon {
     @apply p-2 rounded-lg transition-all duration-200
-           text-ink-600 hover:text-ink-900 hover:bg-parchment-200
-           focus:outline-none focus:ring-2 focus:ring-ink-300;
+           text-ink-600 dark:text-parchment-400 
+           hover:text-ink-900 dark:hover:text-parchment-100 
+           hover:bg-parchment-200 dark:hover:bg-ink-800
+           focus:outline-none focus:ring-2 focus:ring-ink-300 dark:focus:ring-ink-500;
   }
 
   .input {
     @apply w-full px-4 py-2.5
-           bg-parchment-50 text-ink-900 placeholder-ink-400
-           border border-ink-200 rounded-lg
+           bg-parchment-50 dark:bg-ink-900 
+           text-ink-900 dark:text-parchment-50
+           placeholder-ink-400 dark:placeholder-ink-600
+           border border-ink-200 dark:border-ink-700 rounded-lg
            font-body text-sm
            transition-all duration-200
            focus:outline-none focus:ring-2 focus:ring-accent-gold/40 focus:border-accent-gold
-           hover:border-ink-300;
+           hover:border-ink-300 dark:hover:border-ink-600;
   }
 
   .input-lg {
@@ -103,28 +107,28 @@
   }
 
   .label {
-    @apply block text-xs font-medium text-ink-600 uppercase tracking-wider mb-1.5;
+    @apply block text-xs font-medium text-ink-600 dark:text-ink-400 uppercase tracking-wider mb-1.5;
   }
 
   .card {
-    @apply bg-parchment-50 rounded-xl border border-ink-100
+    @apply bg-parchment-50 dark:bg-ink-900 rounded-xl border border-ink-100 dark:border-ink-800
            shadow-paper transition-all duration-300 ease-out;
   }
 
   .card-hover {
-    @apply card hover:shadow-paper-hover hover:border-ink-200
+    @apply card hover:shadow-paper-hover hover:border-ink-200 dark:hover:border-ink-700
            hover:-translate-y-0.5 cursor-pointer;
   }
 
   .sidebar-item {
     @apply flex items-center gap-3 px-3 py-2.5 rounded-lg
-           text-ink-700 font-medium text-sm
+           text-ink-700 dark:text-parchment-300 font-medium text-sm
            transition-all duration-200
-           hover:bg-parchment-200 hover:text-ink-900;
+           hover:bg-parchment-200 dark:hover:bg-ink-800 hover:text-ink-900 dark:hover:text-parchment-100;
   }
 
   .sidebar-item-active {
-    @apply sidebar-item bg-parchment-300 text-ink-900;
+    @apply sidebar-item bg-parchment-300 dark:bg-ink-700 text-ink-900 dark:text-parchment-50;
   }
 
   .tag {
@@ -137,15 +141,15 @@
     @apply inline-flex items-center justify-center
            min-w-[20px] h-5 px-1.5
            text-xs font-medium rounded-full
-           bg-ink-200 text-ink-700;
+           bg-ink-200 dark:bg-ink-700 text-ink-700 dark:text-parchment-300;
   }
 
   .divider {
-    @apply h-px bg-gradient-to-r from-transparent via-ink-200 to-transparent;
+    @apply h-px bg-gradient-to-r from-transparent via-ink-200 dark:via-ink-700 to-transparent;
   }
 
   .divider-vertical {
-    @apply w-px bg-gradient-to-b from-transparent via-ink-200 to-transparent;
+    @apply w-px bg-gradient-to-b from-transparent via-ink-200 dark:via-ink-700 to-transparent;
   }
 }
 
@@ -169,7 +173,7 @@
   }
 
   .glass {
-    @apply bg-parchment-50/80 backdrop-blur-sm;
+    @apply bg-parchment-50/80 dark:bg-ink-900/80 backdrop-blur-sm;
   }
 
   .paper-edge {
@@ -205,12 +209,12 @@
 
 /* Typography refinements */
 h1, h2, h3, h4, h5, h6 {
-  @apply font-display font-semibold tracking-tight text-ink-900;
+  @apply font-display font-semibold tracking-tight text-ink-900 dark:text-parchment-50;
 }
 
 /* Focus visible for accessibility */
 :focus-visible {
-  @apply outline-none ring-2 ring-accent-gold ring-offset-2 ring-offset-parchment-100;
+  @apply outline-none ring-2 ring-accent-gold ring-offset-2 ring-offset-parchment-100 dark:ring-offset-ink-950;
 }
 
 /* Prevent text selection on interactive elements */
@@ -221,6 +225,6 @@ button, [role="button"] {
 /* Print styles */
 @media print {
   body {
-    @apply bg-white;
+    @apply bg-white text-black;
   }
 }

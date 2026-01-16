@@ -32,9 +32,9 @@ export function EmptyState() {
         transition={{ delay: 0.1 }}
         className="relative mb-8"
       >
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-parchment-200 to-parchment-300
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-parchment-200 to-parchment-300 dark:from-ink-800 dark:to-ink-700
                        flex items-center justify-center">
-          <UsersIcon className="w-12 h-12 text-ink-400" />
+          <UsersIcon className="w-12 h-12 text-ink-400 dark:text-ink-500" />
         </div>
 
         {/* Sparkle decoration */}
@@ -62,20 +62,20 @@ export function EmptyState() {
       >
         {hasFilters ? (
           <>
-            <h2 className="font-display font-semibold text-2xl text-ink-900">
+            <h2 className="font-display font-semibold text-2xl text-ink-900 dark:text-parchment-50">
               No characters found
             </h2>
-            <p className="text-ink-600 max-w-md">
+            <p className="text-ink-600 dark:text-parchment-200 max-w-md">
               No characters match your current filters.
               Try adjusting your search or clearing filters.
             </p>
           </>
         ) : (
           <>
-            <h2 className="font-display font-semibold text-2xl text-ink-900">
+            <h2 className="font-display font-semibold text-2xl text-ink-900 dark:text-parchment-50">
               Your story awaits
             </h2>
-            <p className="text-ink-600 max-w-md">
+            <p className="text-ink-600 dark:text-parchment-200 max-w-md">
               Create your first character to begin building your cast.
               Every great story starts with compelling characters.
             </p>
@@ -125,12 +125,12 @@ export function EmptyState() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 + index * 0.1 }}
-            className="text-left p-4 rounded-xl bg-parchment-50/50 border border-ink-100"
+            className="text-left p-4 rounded-xl bg-parchment-50/50 dark:bg-ink-900/50 border border-ink-100 dark:border-ink-800"
           >
-            <h3 className="font-display font-semibold text-ink-900 mb-1">
+            <h3 className="font-display font-semibold text-ink-900 dark:text-parchment-100 mb-1">
               {tip.title}
             </h3>
-            <p className="text-sm text-ink-500">{tip.description}</p>
+            <p className="text-sm text-ink-500 dark:text-ink-400">{tip.description}</p>
           </motion.div>
         ))}
       </motion.div>

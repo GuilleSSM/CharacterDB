@@ -93,12 +93,12 @@ export function ProjectModal() {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-md bg-parchment-50 rounded-2xl shadow-paper-lifted overflow-hidden"
+          className="relative w-full max-w-md bg-parchment-50 dark:bg-ink-900 rounded-2xl shadow-paper-lifted overflow-hidden"
         >
           <form onSubmit={handleSubmit}>
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-ink-100">
-              <h2 className="font-display font-semibold text-xl text-ink-900">
+            <div className="flex items-center justify-between p-6 border-b border-ink-100 dark:border-ink-800">
+              <h2 className="font-display font-semibold text-xl text-ink-900 dark:text-parchment-50">
                 {editingProject ? "Edit Project" : "New Project"}
               </h2>
               <button type="button" onClick={handleClose} className="btn-icon">
@@ -141,7 +141,7 @@ export function ProjectModal() {
                       onClick={() => setColor(c)}
                       className={`w-8 h-8 rounded-full transition-all ${
                         color === c
-                          ? "ring-2 ring-offset-2 ring-offset-parchment-50 ring-ink-400 scale-110"
+                          ? "ring-2 ring-offset-2 ring-offset-parchment-50 dark:ring-offset-ink-900 ring-ink-400 scale-110"
                           : "hover:scale-105"
                       }`}
                       style={{ backgroundColor: c }}
@@ -152,7 +152,7 @@ export function ProjectModal() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between p-6 border-t border-ink-100 bg-parchment-100/50">
+            <div className="flex items-center justify-between p-6 border-t border-ink-100 dark:border-ink-800 bg-parchment-100/50 dark:bg-ink-950/30">
               {editingProject ? (
                 <button
                   type="button"

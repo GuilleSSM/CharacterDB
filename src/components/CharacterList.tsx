@@ -42,9 +42,9 @@ export function CharacterList() {
       case "supporting":
         return "bg-accent-forest/20 text-accent-forest border-accent-forest/30";
       case "minor":
-        return "bg-ink-200 text-ink-600 border-ink-300";
+        return "bg-ink-200 text-ink-600 border-ink-300 dark:bg-ink-700 dark:text-parchment-300 dark:border-ink-600";
       default:
-        return "bg-ink-100 text-ink-500 border-ink-200";
+        return "bg-ink-100 text-ink-500 border-ink-200 dark:bg-ink-800 dark:text-parchment-400 dark:border-ink-700";
     }
   };
 
@@ -76,7 +76,7 @@ export function CharacterList() {
     <div className="card overflow-hidden">
       {/* Table header */}
       <div className="grid grid-cols-[auto_1fr_120px_120px_120px_100px_48px] gap-4 px-6 py-3
-                     bg-parchment-100 border-b border-ink-100 text-xs font-medium text-ink-500 uppercase tracking-wider">
+                     bg-parchment-100 dark:bg-ink-900 border-b border-ink-100 dark:border-ink-800 text-xs font-medium text-ink-500 dark:text-ink-400 uppercase tracking-wider">
         <div className="w-10" />
         <div>Name</div>
         <div>Role</div>
@@ -91,7 +91,7 @@ export function CharacterList() {
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="divide-y divide-ink-100"
+        className="divide-y divide-ink-100 dark:divide-ink-800"
       >
         {sortedCharacters.map((character) => (
           <CharacterListItem
@@ -134,7 +134,7 @@ function CharacterListItem({
       variants={variants}
       onClick={onSelect}
       className="grid grid-cols-[auto_1fr_120px_120px_120px_100px_48px] gap-4 px-6 py-4
-                 items-center cursor-pointer hover:bg-parchment-100 transition-colors group"
+                 items-center cursor-pointer hover:bg-parchment-100 dark:hover:bg-ink-800 transition-colors group"
     >
       {/* Avatar */}
       <div className="relative">
@@ -145,9 +145,9 @@ function CharacterListItem({
             className="w-10 h-10 rounded-full object-cover ring-2 ring-parchment-200"
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-parchment-200 to-parchment-300
-                         flex items-center justify-center ring-2 ring-parchment-200">
-            <UserIcon className="w-5 h-5 text-ink-400" />
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-parchment-200 to-parchment-300 dark:from-ink-800 dark:to-ink-700
+                         flex items-center justify-center ring-2 ring-parchment-200 dark:ring-ink-800">
+            <UserIcon className="w-5 h-5 text-ink-400 dark:text-ink-500" />
           </div>
         )}
 
@@ -163,7 +163,7 @@ function CharacterListItem({
       {/* Name & aliases */}
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-display font-semibold text-ink-900 truncate">
+          <span className="font-display font-semibold text-ink-900 dark:text-parchment-100 truncate">
             {character.name}
           </span>
           <button
@@ -197,12 +197,12 @@ function CharacterListItem({
       </div>
 
       {/* Age */}
-      <div className="text-sm text-ink-700">
+      <div className="text-sm text-ink-700 dark:text-parchment-300">
         {character.age || <span className="text-ink-300">—</span>}
       </div>
 
       {/* Occupation */}
-      <div className="text-sm text-ink-700 truncate">
+      <div className="text-sm text-ink-700 dark:text-parchment-300 truncate">
         {character.occupation || <span className="text-ink-300">—</span>}
       </div>
 

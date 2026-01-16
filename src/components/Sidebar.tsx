@@ -28,11 +28,11 @@ export function Sidebar() {
       initial={false}
       animate={{ width: isSidebarCollapsed ? 64 : 256 }}
       transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-      className="fixed left-0 top-0 h-full bg-parchment-50 border-r border-ink-100
+      className="fixed left-0 top-0 h-full bg-parchment-50 dark:bg-ink-950 border-r border-ink-100 dark:border-ink-800
                  flex flex-col z-20 shadow-paper"
     >
       {/* Header */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-ink-100">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-ink-100 dark:border-ink-800">
         <AnimatePresence mode="wait">
           {!isSidebarCollapsed && (
             <motion.div
@@ -47,7 +47,7 @@ export function Sidebar() {
               >
                 <BookOpenIcon className="w-4 h-4 text-parchment-50" />
               </div>
-              <span className="font-display font-semibold text-lg text-ink-900">
+              <span className="font-display font-semibold text-lg text-ink-900 dark:text-parchment-100">
                 CharacterDB
               </span>
             </motion.div>

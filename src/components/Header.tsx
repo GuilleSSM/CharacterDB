@@ -10,6 +10,8 @@ import {
   ArrowUpTrayIcon,
   ArrowsUpDownIcon,
   XMarkIcon,
+  SunIcon,
+  MoonIcon,
 } from "./icons";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
@@ -27,6 +29,8 @@ export function Header() {
     selectCharacter,
     exportData,
     importData,
+    theme,
+    toggleTheme,
   } = useStore();
 
   const [searchFocused, setSearchFocused] = useState(false);
@@ -106,7 +110,7 @@ export function Header() {
     : null;
 
   return (
-    <header className="h-16 flex items-center gap-4 px-6 bg-parchment-50/80 backdrop-blur-sm border-b border-ink-100 sticky top-0 z-10">
+    <header className="h-16 flex items-center gap-4 px-6 bg-parchment-50/80 dark:bg-ink-950/80 backdrop-blur-sm border-b border-ink-100 dark:border-ink-800 sticky top-0 z-10">
       {/* Search */}
       <div className="relative flex-1 max-w-md">
         <div
@@ -264,6 +268,15 @@ export function Header() {
       </button>
       <button onClick={handleExport} className="btn-ghost" title="Export">
         <ArrowDownTrayIcon className="w-4 h-4" />
+      </button>
+
+      {/* Theme Toggle */}
+      <button onClick={toggleTheme} className="btn-ghost" title="Toggle Theme">
+        {theme === "dark" ? (
+          <SunIcon className="w-4 h-4" />
+        ) : (
+          <MoonIcon className="w-4 h-4" />
+        )}
       </button>
 
       {/* Divider */}

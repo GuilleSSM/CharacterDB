@@ -123,11 +123,11 @@ export function CharacterModal() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 100 }}
           transition={{ type: "spring", damping: 30, stiffness: 300 }}
-          className="relative ml-auto w-full max-w-3xl h-full bg-parchment-50 shadow-paper-lifted
+          className="relative ml-auto w-full max-w-3xl h-full bg-parchment-50 dark:bg-ink-950 shadow-paper-lifted
                      flex flex-col overflow-hidden"
         >
           {/* Header */}
-          <header className="flex items-start gap-4 p-6 border-b border-ink-100">
+          <header className="flex items-start gap-4 p-6 border-b border-ink-100 dark:border-ink-800">
             {/* Portrait */}
             <div className="relative group">
               {character.portrait_path ? (
@@ -137,8 +137,8 @@ export function CharacterModal() {
                   className="w-20 h-20 rounded-xl object-cover ring-2 ring-parchment-200"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-parchment-200 to-parchment-300
-                               flex items-center justify-center ring-2 ring-parchment-200">
+                <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-parchment-200 to-parchment-300 dark:from-ink-800 dark:to-ink-700
+                               flex items-center justify-center ring-2 ring-parchment-200 dark:ring-ink-800">
                   <UserIcon className="w-10 h-10 text-ink-400" />
                 </div>
               )}
@@ -155,7 +155,7 @@ export function CharacterModal() {
                 value={character.name || ""}
                 onChange={(e) => handleChange("name", e.target.value)}
                 placeholder="Character Name"
-                className="w-full font-display font-semibold text-2xl text-ink-900
+                className="w-full font-display font-semibold text-2xl text-ink-900 dark:text-parchment-50
                           bg-transparent border-none focus:outline-none focus:ring-0 p-0"
               />
               <input
@@ -163,7 +163,7 @@ export function CharacterModal() {
                 value={character.aliases || ""}
                 onChange={(e) => handleChange("aliases", e.target.value)}
                 placeholder="Aliases or nickname..."
-                className="w-full text-sm text-ink-600 mt-1
+                className="w-full text-sm text-ink-600 dark:text-parchment-300 mt-1
                           bg-transparent border-none focus:outline-none focus:ring-0 p-0"
               />
 
@@ -174,7 +174,7 @@ export function CharacterModal() {
                   <span
                     key={project.id}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium
-                              rounded-full bg-parchment-200 text-ink-700"
+                              rounded-full bg-parchment-200 dark:bg-ink-800 text-ink-700 dark:text-parchment-200"
                   >
                     <span
                       className="w-2 h-2 rounded-full"
@@ -226,9 +226,9 @@ export function CharacterModal() {
                   </button>
 
                   {showProjectPicker && (
-                    <div className="absolute top-full left-0 mt-2 w-48 bg-parchment-50 rounded-xl
-                                   shadow-paper-hover border border-ink-100 z-10 p-1">
-                      <p className="px-3 py-2 text-xs font-medium text-ink-500 uppercase">
+                    <div className="absolute top-full left-0 mt-2 w-48 bg-parchment-50 dark:bg-ink-900 rounded-xl
+                                   shadow-paper-hover border border-ink-100 dark:border-ink-800 z-10 p-1">
+                      <p className="px-3 py-2 text-xs font-medium text-ink-500 dark:text-ink-400 uppercase">
                         Add to Project
                       </p>
                       {projects
@@ -245,8 +245,8 @@ export function CharacterModal() {
                               );
                               setShowProjectPicker(false);
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-700
-                                      rounded-lg hover:bg-parchment-100 transition-colors"
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-700 dark:text-parchment-200
+                                      rounded-lg hover:bg-parchment-100 dark:hover:bg-ink-800 transition-colors"
                           >
                             <span
                               className="w-2 h-2 rounded-full"
@@ -276,9 +276,9 @@ export function CharacterModal() {
                   </button>
 
                   {showTagPicker && (
-                    <div className="absolute top-full left-0 mt-2 w-48 bg-parchment-50 rounded-xl
-                                   shadow-paper-hover border border-ink-100 z-10 p-1">
-                      <p className="px-3 py-2 text-xs font-medium text-ink-500 uppercase">
+                    <div className="absolute top-full left-0 mt-2 w-48 bg-parchment-50 dark:bg-ink-900 rounded-xl
+                                   shadow-paper-hover border border-ink-100 dark:border-ink-800 z-10 p-1">
+                      <p className="px-3 py-2 text-xs font-medium text-ink-500 dark:text-ink-400 uppercase">
                         Add Tag
                       </p>
                       {tags
@@ -290,8 +290,8 @@ export function CharacterModal() {
                               assignTagToCharacter(selectedCharacter.id, tag.id);
                               setShowTagPicker(false);
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-700
-                                      rounded-lg hover:bg-parchment-100 transition-colors"
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-700 dark:text-parchment-200
+                                      rounded-lg hover:bg-parchment-100 dark:hover:bg-ink-800 transition-colors"
                           >
                             <TagIcon
                               className="w-3 h-3"
@@ -339,15 +339,15 @@ export function CharacterModal() {
           </header>
 
           {/* Tabs */}
-          <nav className="flex border-b border-ink-100 px-6">
+          <nav className="flex border-b border-ink-100 dark:border-ink-800 px-6">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`relative px-4 py-3 text-sm font-medium transition-colors ${
                   activeTab === tab.id
-                    ? "text-ink-900"
-                    : "text-ink-500 hover:text-ink-700"
+                    ? "text-ink-900 dark:text-parchment-50"
+                    : "text-ink-500 dark:text-ink-400 hover:text-ink-700 dark:hover:text-parchment-300"
                 }`}
               >
                 {tab.label}
@@ -394,8 +394,8 @@ export function CharacterModal() {
           </div>
 
           {/* Footer */}
-          <footer className="flex items-center justify-between px-6 py-3 border-t border-ink-100
-                           bg-parchment-100/50 text-xs text-ink-500">
+          <footer className="flex items-center justify-between px-6 py-3 border-t border-ink-100 dark:border-ink-800
+                           bg-parchment-100/50 dark:bg-ink-900/50 text-xs text-ink-500 dark:text-ink-400">
             <span>
               Created {new Date(character.created_at).toLocaleDateString()}
             </span>
@@ -798,12 +798,12 @@ function RelationshipsTab({ character }: { character: CharacterWithRelations }) 
 
       {relationships.length === 0 ? (
         <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-parchment-200
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-parchment-200 dark:bg-ink-800
                          flex items-center justify-center">
-            <UserIcon className="w-8 h-8 text-ink-400" />
+            <UserIcon className="w-8 h-8 text-ink-400 dark:text-ink-500" />
           </div>
-          <p className="text-ink-600 mb-2">No relationships yet</p>
-          <p className="text-sm text-ink-400">
+          <p className="text-ink-600 dark:text-ink-400 mb-2">No relationships yet</p>
+          <p className="text-sm text-ink-400 dark:text-ink-500">
             Connect this character to others in your story
           </p>
         </div>
@@ -812,7 +812,7 @@ function RelationshipsTab({ character }: { character: CharacterWithRelations }) 
           {relationships.map((rel) => (
             <div
               key={rel.id}
-              className="flex items-center gap-4 p-4 rounded-xl bg-parchment-100 border border-ink-100"
+              className="flex items-center gap-4 p-4 rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700"
             >
               <div className="w-10 h-10 rounded-full bg-parchment-200 flex items-center justify-center">
                 <UserIcon className="w-5 h-5 text-ink-400" />
