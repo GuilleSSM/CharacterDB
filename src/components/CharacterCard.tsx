@@ -54,7 +54,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
     setShowMenu(false);
     const confirmed = await confirm(
       `Delete "${character.name}"? This cannot be undone.`,
-      { title: "Delete Character", kind: "warning" }
+      { title: "Delete Character", kind: "warning" },
     );
     if (confirmed) {
       deleteCharacter(character.id);
@@ -64,7 +64,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
   const getRoleColor = (role?: string) => {
     switch (role?.toLowerCase()) {
       case "protagonist":
-        return "bg-accent-gold/20 text-accent-gold";
+        return "bg-accent-gold/60 text-black";
       case "antagonist":
         return "bg-accent-burgundy/20 text-accent-burgundy";
       case "supporting":
@@ -229,24 +229,25 @@ export function CharacterCard({ character }: CharacterCardProps) {
         )}
 
         {/* Personality snippet */}
-        {character.personality_traits && character.personality_traits.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {character.personality_traits.slice(0, 3).map((trait, index) => (
-              <span
-                key={index}
-                className="px-2 py-0.5 text-[10px] font-medium text-ink-600 dark:text-parchment-200
+        {character.personality_traits &&
+          character.personality_traits.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {character.personality_traits.slice(0, 3).map((trait, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-0.5 text-[10px] font-medium text-ink-600 dark:text-parchment-200
                           bg-parchment-200 dark:bg-ink-800 rounded-full"
-              >
-                {trait}
-              </span>
-            ))}
-            {character.personality_traits.length > 3 && (
-              <span className="px-2 py-0.5 text-[10px] text-ink-400">
-                +{character.personality_traits.length - 3}
-              </span>
-            )}
-          </div>
-        )}
+                >
+                  {trait}
+                </span>
+              ))}
+              {character.personality_traits.length > 3 && (
+                <span className="px-2 py-0.5 text-[10px] text-ink-400">
+                  +{character.personality_traits.length - 3}
+                </span>
+              )}
+            </div>
+          )}
       </div>
 
       {/* Decorative corner flourish */}

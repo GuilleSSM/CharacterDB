@@ -1,11 +1,7 @@
 import { motion } from "framer-motion";
 import { useStore } from "../stores/useStore";
 import type { Character } from "../types";
-import {
-  HeartIcon,
-  UserIcon,
-  ChevronRightIcon,
-} from "./icons";
+import { HeartIcon, UserIcon, ChevronRightIcon } from "./icons";
 
 export function CharacterList() {
   const { characters, sort, selectCharacter, toggleFavorite } = useStore();
@@ -36,7 +32,7 @@ export function CharacterList() {
   const getRoleColor = (role?: string) => {
     switch (role?.toLowerCase()) {
       case "protagonist":
-        return "bg-accent-gold/20 text-accent-gold border-accent-gold/30";
+        return "bg-accent-gold/60 text-black border-accent-gold/30";
       case "antagonist":
         return "bg-accent-burgundy/20 text-accent-burgundy border-accent-burgundy/30";
       case "supporting":
@@ -75,8 +71,10 @@ export function CharacterList() {
   return (
     <div className="card overflow-hidden">
       {/* Table header */}
-      <div className="grid grid-cols-[auto_1fr_120px_120px_120px_100px_48px] gap-4 px-6 py-3
-                     bg-parchment-100 dark:bg-ink-900 border-b border-ink-100 dark:border-ink-800 text-xs font-medium text-ink-500 dark:text-ink-400 uppercase tracking-wider">
+      <div
+        className="grid grid-cols-[auto_1fr_120px_120px_120px_100px_48px] gap-4 px-6 py-3
+                     bg-parchment-100 dark:bg-ink-900 border-b border-ink-100 dark:border-ink-800 text-xs font-medium text-ink-500 dark:text-ink-400 uppercase tracking-wider"
+      >
         <div className="w-10" />
         <div>Name</div>
         <div>Role</div>
@@ -145,16 +143,20 @@ function CharacterListItem({
             className="w-10 h-10 rounded-full object-cover ring-2 ring-parchment-200"
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-parchment-200 to-parchment-300 dark:from-ink-800 dark:to-ink-700
-                         flex items-center justify-center ring-2 ring-parchment-200 dark:ring-ink-800">
+          <div
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-parchment-200 to-parchment-300 dark:from-ink-800 dark:to-ink-700
+                         flex items-center justify-center ring-2 ring-parchment-200 dark:ring-ink-800"
+          >
             <UserIcon className="w-5 h-5 text-ink-400 dark:text-ink-500" />
           </div>
         )}
 
         {/* Favorite indicator */}
         {character.is_favorite && (
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent-burgundy rounded-full
-                         flex items-center justify-center">
+          <div
+            className="absolute -top-1 -right-1 w-4 h-4 bg-accent-burgundy rounded-full
+                         flex items-center justify-center"
+          >
             <HeartIcon className="w-2.5 h-2.5 text-parchment-50" filled />
           </div>
         )}
@@ -207,12 +209,16 @@ function CharacterListItem({
       </div>
 
       {/* Modified date */}
-      <div className="text-xs text-ink-500">{formatDate(character.updated_at)}</div>
+      <div className="text-xs text-ink-500">
+        {formatDate(character.updated_at)}
+      </div>
 
       {/* Arrow */}
       <div className="flex justify-end">
-        <ChevronRightIcon className="w-5 h-5 text-ink-300 group-hover:text-ink-500
-                                     group-hover:translate-x-1 transition-all" />
+        <ChevronRightIcon
+          className="w-5 h-5 text-ink-300 group-hover:text-ink-500
+                                     group-hover:translate-x-1 transition-all"
+        />
       </div>
     </motion.div>
   );
