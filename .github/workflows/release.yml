@@ -13,8 +13,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: "macos-latest" # For Intel and Apple Silicon Macs
-            args: "--target universal-apple-darwin"
           - platform: "ubuntu-22.04" # For Linux (.deb and .AppImage)
             args: ""
           - platform: "windows-latest" # For Windows (.exe and .msi)
