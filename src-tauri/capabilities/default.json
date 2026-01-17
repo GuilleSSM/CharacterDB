@@ -2,7 +2,9 @@
   "$schema": "https://schema.tauri.app/config/2",
   "identifier": "default",
   "description": "Default capabilities for the application",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "core:path:default",
@@ -17,28 +19,50 @@
     "fs:allow-read-file",
     {
       "identifier": "fs:allow-write-file",
-      "allow": [{ "path": "$APPDATA/**" }]
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        }
+      ]
     },
     "fs:allow-copy-file",
     {
       "identifier": "fs:allow-mkdir",
-      "allow": [{ "path": "$APPDATA/**" }]
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        }
+      ]
     },
     {
       "identifier": "fs:allow-exists",
-      "allow": [{ "path": "$APPDATA/**" }]
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        }
+      ]
     },
     {
       "identifier": "fs:allow-read",
       "allow": [
-        { "path": "$APPDATA/**" },
-        { "path": "$PICTURE/**" },
-        { "path": "$HOME/**" }
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$PICTURE/**"
+        },
+        {
+          "path": "$HOME/**"
+        }
       ]
     },
     {
       "identifier": "fs:allow-write",
-      "allow": [{ "path": "$APPDATA/**" }]
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        }
+      ]
     },
     "sql:default",
     "sql:allow-load",
@@ -50,6 +74,7 @@
     "store:allow-set",
     "store:allow-save",
     "store:allow-load",
-    "updater:default"
+    "updater:default",
+    "log:default"
   ]
 }

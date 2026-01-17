@@ -1,7 +1,7 @@
 {
   "name": "CharacterDB",
   "private": true,
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,6 +13,7 @@
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
     "@tauri-apps/plugin-fs": "^2.0.0",
+    "@tauri-apps/plugin-log": "^2.8.0",
     "@tauri-apps/plugin-sql": "^2.0.0",
     "@tauri-apps/plugin-store": "^2.0.0",
     "framer-motion": "^11.0.0",
