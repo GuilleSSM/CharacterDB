@@ -5,6 +5,7 @@ import { useStore } from "../stores/useStore";
 import type { Project, Tag } from "../types";
 import { getVersion } from "@tauri-apps/api/app";
 import { check, Update } from "@tauri-apps/plugin-updater";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { relaunch } from "@tauri-apps/plugin-process";
 import {
   BookOpenIcon,
@@ -21,6 +22,7 @@ import {
   ArrowDownTrayIcon,
   XMarkIcon,
 } from "./icons";
+import { isLinux } from "../lib/platform";
 
 export function Sidebar() {
   const {
@@ -162,7 +164,13 @@ export function Sidebar() {
                   }}
                 >
                   <button
-                    onClick={() => updateApp(updateAvailable)}
+                    onClick={() =>
+                      !isLinux()
+                        ? updateApp(updateAvailable)
+                        : openUrl(
+                            "https://github.com/GuilleSSM/CharacterDB/releases/latest",
+                          )
+                    }
                     className="mt-0.5 flex items-center gap-1 text-[10px] font-bold text-accent-gold/90 hover:text-accent-burgundy transition-colors uppercase tracking-wider"
                   >
                     <ArrowDownTrayIcon className="w-3 h-3" />
