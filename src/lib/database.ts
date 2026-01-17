@@ -54,6 +54,7 @@ async function initializeSchema(): Promise<void> {
       fears TEXT,
       desires TEXT,
       quirks TEXT,
+      powers TEXT,
       origin TEXT,
       family TEXT,
       education TEXT,
@@ -124,13 +125,22 @@ async function initializeSchema(): Promise<void> {
   await database.execute(`
     CREATE INDEX IF NOT EXISTS idx_character_projects_project ON character_projects(project_id)
   `);
+
+  // Migration: Add powers column if it doesn't exist
+  try {
+    await database.execute(`ALTER TABLE characters ADD COLUMN powers TEXT`);
+  } catch {
+    // Column already exists, ignore
+  }
 }
 
 // Character CRUD operations
-export async function getAllCharacters(): Promise<Character[]> {
+export async function getAllCharacters(showArchived = false): Promise<Character[]> {
   const database = await getDb();
   const rows = await database.select<Character[]>(
-    "SELECT * FROM characters WHERE is_archived = 0 ORDER BY updated_at DESC"
+    showArchived
+      ? "SELECT * FROM characters ORDER BY updated_at DESC"
+      : "SELECT * FROM characters WHERE is_archived = 0 ORDER BY updated_at DESC"
   );
   return rows.map(parseCharacter);
 }
@@ -219,11 +229,11 @@ export async function createCharacter(
     `INSERT INTO characters (
       name, aliases, role, age, gender, pronouns, species, occupation,
       height, build, hair, eyes, distinguishing_features, appearance_notes,
-      personality_traits, strengths, weaknesses, fears, desires, quirks,
+      personality_traits, strengths, weaknesses, fears, desires, quirks, powers,
       origin, family, education, backstory,
       character_arc, first_appearance, last_appearance, story_notes,
       portrait_path, reference_images
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       character.name || "Unnamed Character",
       character.aliases || null,
@@ -247,6 +257,7 @@ export async function createCharacter(
       character.fears || null,
       character.desires || null,
       character.quirks || null,
+      character.powers ? JSON.stringify(character.powers) : null,
       character.origin || null,
       character.family || null,
       character.education || null,
@@ -334,6 +345,11 @@ export async function updateCharacter(
         ? JSON.stringify(character.personality_traits)
         : null
     );
+  }
+
+  if ("powers" in character) {
+    fields.push("powers = ?");
+    values.push(character.powers ? JSON.stringify(character.powers) : null);
   }
 
   if ("reference_images" in character) {
@@ -428,14 +444,20 @@ export async function removeCharacterFromProject(
 }
 
 export async function getCharactersByProject(
-  projectId: number
+  projectId: number,
+  showArchived = false
 ): Promise<Character[]> {
   const database = await getDb();
   const rows = await database.select<Character[]>(
-    `SELECT c.* FROM characters c
-     JOIN character_projects cp ON c.id = cp.character_id
-     WHERE cp.project_id = ? AND c.is_archived = 0
-     ORDER BY c.updated_at DESC`,
+    showArchived
+      ? `SELECT c.* FROM characters c
+         JOIN character_projects cp ON c.id = cp.character_id
+         WHERE cp.project_id = ?
+         ORDER BY c.updated_at DESC`
+      : `SELECT c.* FROM characters c
+         JOIN character_projects cp ON c.id = cp.character_id
+         WHERE cp.project_id = ? AND c.is_archived = 0
+         ORDER BY c.updated_at DESC`,
     [projectId]
   );
   return rows.map(parseCharacter);
@@ -515,23 +537,37 @@ export async function deleteRelationship(id: number): Promise<void> {
 }
 
 // Search
-export async function searchCharacters(query: string): Promise<Character[]> {
+export async function searchCharacters(query: string, showArchived = false): Promise<Character[]> {
   const database = await getDb();
   const searchTerm = `%${query}%`;
   const rows = await database.select<Character[]>(
-    `SELECT * FROM characters
-     WHERE is_archived = 0 AND (
-       name LIKE ? OR
-       aliases LIKE ? OR
-       role LIKE ? OR
-       occupation LIKE ? OR
-       backstory LIKE ? OR
-       appearance_notes LIKE ? OR
-       personality_traits LIKE ?
-     )
-     ORDER BY
-       CASE WHEN name LIKE ? THEN 0 ELSE 1 END,
-       updated_at DESC`,
+    showArchived
+      ? `SELECT * FROM characters
+         WHERE (
+           name LIKE ? OR
+           aliases LIKE ? OR
+           role LIKE ? OR
+           occupation LIKE ? OR
+           backstory LIKE ? OR
+           appearance_notes LIKE ? OR
+           personality_traits LIKE ?
+         )
+         ORDER BY
+           CASE WHEN name LIKE ? THEN 0 ELSE 1 END,
+           updated_at DESC`
+      : `SELECT * FROM characters
+         WHERE is_archived = 0 AND (
+           name LIKE ? OR
+           aliases LIKE ? OR
+           role LIKE ? OR
+           occupation LIKE ? OR
+           backstory LIKE ? OR
+           appearance_notes LIKE ? OR
+           personality_traits LIKE ?
+         )
+         ORDER BY
+           CASE WHEN name LIKE ? THEN 0 ELSE 1 END,
+           updated_at DESC`,
     [
       searchTerm,
       searchTerm,
@@ -614,6 +650,11 @@ function parseCharacter(row: Character): Character {
       ? typeof row.personality_traits === "string"
         ? JSON.parse(row.personality_traits)
         : row.personality_traits
+      : [],
+    powers: row.powers
+      ? typeof row.powers === "string"
+        ? JSON.parse(row.powers)
+        : row.powers
       : [],
     reference_images: row.reference_images
       ? typeof row.reference_images === "string"

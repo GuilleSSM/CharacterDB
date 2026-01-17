@@ -16,12 +16,13 @@ import {
   TagIcon,
 } from "./icons";
 
-type TabId = "basic" | "appearance" | "personality" | "background" | "story" | "relationships";
+type TabId = "basic" | "appearance" | "personality" | "powers" | "background" | "story" | "relationships";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "basic", label: "Basic" },
   { id: "appearance", label: "Appearance" },
   { id: "personality", label: "Personality" },
+  { id: "powers", label: "Powers" },
   { id: "background", label: "Background" },
   { id: "story", label: "Story" },
   { id: "relationships", label: "Relationships" },
@@ -404,6 +405,9 @@ export function CharacterModal() {
                 {activeTab === "personality" && (
                   <PersonalityTab character={character} onChange={handleChange} />
                 )}
+                {activeTab === "powers" && (
+                  <PowersTab character={character} onChange={handleChange} />
+                )}
                 {activeTab === "background" && (
                   <BackgroundTab character={character} onChange={handleChange} />
                 )}
@@ -697,6 +701,72 @@ function PersonalityTab({ character, onChange }: TabProps) {
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+function PowersTab({ character, onChange }: TabProps) {
+  const [newPower, setNewPower] = useState("");
+
+  const addPower = () => {
+    if (!newPower.trim()) return;
+    const powers = [...(character.powers || []), newPower.trim()];
+    onChange("powers", powers);
+    setNewPower("");
+  };
+
+  const removePower = (index: number) => {
+    const powers = [...(character.powers || [])];
+    powers.splice(index, 1);
+    onChange("powers", powers);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <label className="label">Powers & Abilities</label>
+        <p className="text-xs text-ink-500 dark:text-ink-400 mb-3">
+          Add special abilities, magical powers, skills, or extraordinary capabilities.
+        </p>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {character.powers?.map((power, index) => (
+            <span
+              key={index}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm
+                        bg-accent-gold/20 dark:bg-accent-gold/10 text-ink-700 dark:text-parchment-200
+                        border border-accent-gold/30 rounded-full"
+            >
+              {power}
+              <button
+                onClick={() => removePower(index)}
+                className="ml-1 hover:text-accent-burgundy"
+              >
+                <XMarkIcon className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newPower}
+            onChange={(e) => setNewPower(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addPower()}
+            placeholder="Add a power or ability..."
+            className="input flex-1"
+          />
+          <button onClick={addPower} className="btn-secondary">
+            <PlusIcon className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {(character.powers?.length ?? 0) === 0 && (
+        <div className="text-center py-8 text-ink-400 dark:text-ink-500">
+          <p>No powers or abilities added yet.</p>
+          <p className="text-sm mt-1">Add special abilities, magic, skills, or supernatural powers.</p>
+        </div>
+      )}
     </div>
   );
 }

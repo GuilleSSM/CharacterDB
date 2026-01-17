@@ -131,11 +131,11 @@ export const useStore = create<AppState>((set, get) => ({
     let characters: Character[];
 
     if (filter.search) {
-      characters = await db.searchCharacters(filter.search);
+      characters = await db.searchCharacters(filter.search, filter.showArchived);
     } else if (filter.projectId) {
-      characters = await db.getCharactersByProject(filter.projectId);
+      characters = await db.getCharactersByProject(filter.projectId, filter.showArchived);
     } else {
-      characters = await db.getAllCharacters();
+      characters = await db.getAllCharacters(filter.showArchived);
     }
 
     set({ characters });

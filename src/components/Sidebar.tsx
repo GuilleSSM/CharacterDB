@@ -14,6 +14,7 @@ import {
   EllipsisVerticalIcon,
   PencilIcon,
   TrashIcon,
+  ArchiveBoxIcon,
 } from "./icons";
 
 export function Sidebar() {
@@ -139,6 +140,45 @@ export function Sidebar() {
             </AnimatePresence>
             {!isSidebarCollapsed && (
               <span className="badge ml-auto">{characters.length}</span>
+            )}
+          </button>
+
+          {/* Show Archived Toggle */}
+          <button
+            onClick={() => setFilter({ showArchived: !filter.showArchived })}
+            className={`w-full ${
+              filter.showArchived
+                ? "sidebar-item-active"
+                : "sidebar-item"
+            }`}
+          >
+            <ArchiveBoxIcon className="w-5 h-5 flex-shrink-0" />
+            <AnimatePresence mode="wait">
+              {!isSidebarCollapsed && (
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="truncate"
+                >
+                  Show Archived
+                </motion.span>
+              )}
+            </AnimatePresence>
+            {!isSidebarCollapsed && (
+              <div
+                className={`ml-auto w-8 h-4 rounded-full transition-colors ${
+                  filter.showArchived
+                    ? "bg-accent-gold"
+                    : "bg-ink-200 dark:bg-ink-700"
+                }`}
+              >
+                <motion.div
+                  animate={{ x: filter.showArchived ? 16 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-4 h-4 rounded-full bg-parchment-50 shadow-sm"
+                />
+              </div>
             )}
           </button>
         </div>

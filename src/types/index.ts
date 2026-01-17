@@ -25,6 +25,9 @@ export interface Character {
   desires?: string;
   quirks?: string;
 
+  // Powers & Abilities
+  powers?: string[];
+
   // Background
   origin?: string;
   family?: string;

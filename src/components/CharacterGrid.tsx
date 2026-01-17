@@ -5,8 +5,12 @@ import { CharacterCard } from "./CharacterCard";
 export function CharacterGrid() {
   const { characters, sort } = useStore();
 
-  // Sort characters
+  // Sort characters (favorites first, then by selected field)
   const sortedCharacters = [...characters].sort((a, b) => {
+    // Favorites always come first
+    if (a.is_favorite && !b.is_favorite) return -1;
+    if (!a.is_favorite && b.is_favorite) return 1;
+
     const direction = sort.direction === "asc" ? 1 : -1;
 
     switch (sort.field) {
