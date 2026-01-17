@@ -148,6 +148,13 @@ export const useStore = create<AppState>((set, get) => ({
       characters = await db.getAllCharacters(filter.showArchived);
     }
 
+    // Apply tag filter if any tags are selected
+    if (filter.tagIds.length > 0) {
+      const matchingIds = await db.getCharacterIdsByTags(filter.tagIds);
+      const matchingIdSet = new Set(matchingIds);
+      characters = characters.filter((c) => matchingIdSet.has(c.id));
+    }
+
     set({ characters });
   },
 

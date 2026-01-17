@@ -515,6 +515,22 @@ export async function removeTagFromCharacter(
   );
 }
 
+export async function getCharacterIdsByTags(
+  tagIds: number[]
+): Promise<number[]> {
+  if (tagIds.length === 0) return [];
+  const database = await getDb();
+  const placeholders = tagIds.map(() => "?").join(", ");
+  const rows = await database.select<{ character_id: number }[]>(
+    `SELECT character_id FROM character_tags
+     WHERE tag_id IN (${placeholders})
+     GROUP BY character_id
+     HAVING COUNT(DISTINCT tag_id) = ?`,
+    [...tagIds, tagIds.length]
+  );
+  return rows.map((r) => r.character_id);
+}
+
 // Relationship operations
 export async function createRelationship(
   relationship: Partial<Relationship>
