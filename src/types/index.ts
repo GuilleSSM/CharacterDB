@@ -124,3 +124,9 @@ export interface SortState {
   field: "name" | "created_at" | "updated_at" | "role";
   direction: "asc" | "desc";
 }
+
+export interface ImportResult {
+  characters: { imported: number; duplicates: number; errors: number };
+  projects: { imported: number; duplicates: number; errors: number };
+  tags: { imported: number; duplicates: number; errors: number };
+}

@@ -14,7 +14,7 @@ import {
   SunIcon,
   MoonIcon,
 } from "./icons";
-import { save, open } from "@tauri-apps/plugin-dialog";
+import { save, open, message } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 
 export function Header() {
@@ -92,10 +92,47 @@ export function Header() {
       });
       if (filePath) {
         const content = await readTextFile(filePath as string);
-        await importData(content);
+        const result = await importData(content);
+
+        // Build feedback message
+        const lines: string[] = [];
+        const { characters, projects, tags } = result;
+
+        if (characters.imported > 0 || characters.duplicates > 0 || characters.errors > 0) {
+          lines.push(
+            `Characters: ${characters.imported} imported, ${characters.duplicates} duplicates skipped, ${characters.errors} errors`
+          );
+        }
+        if (projects.imported > 0 || projects.duplicates > 0 || projects.errors > 0) {
+          lines.push(
+            `Projects: ${projects.imported} imported, ${projects.duplicates} duplicates skipped, ${projects.errors} errors`
+          );
+        }
+        if (tags.imported > 0 || tags.duplicates > 0 || tags.errors > 0) {
+          lines.push(
+            `Tags: ${tags.imported} imported, ${tags.duplicates} duplicates skipped, ${tags.errors} errors`
+          );
+        }
+
+        const totalImported = characters.imported + projects.imported + tags.imported;
+        const totalDuplicates = characters.duplicates + projects.duplicates + tags.duplicates;
+        const totalErrors = characters.errors + projects.errors + tags.errors;
+
+        if (lines.length === 0) {
+          await message("No data was found in the file.", { title: "Import Complete", kind: "info" });
+        } else {
+          const summary = totalErrors > 0
+            ? `Import completed with ${totalErrors} error(s).`
+            : totalDuplicates > 0
+            ? `Import completed. ${totalImported} item(s) imported, ${totalDuplicates} duplicate(s) skipped.`
+            : `Import completed. ${totalImported} item(s) imported successfully.`;
+
+          await message(`${summary}\n\n${lines.join("\n")}`, { title: "Import Results", kind: "info" });
+        }
       }
     } catch (error) {
       console.error("Import failed:", error);
+      await message("Failed to import data. Please check the file format.", { title: "Import Error", kind: "error" });
     }
   }, [importData]);
 

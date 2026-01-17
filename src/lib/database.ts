@@ -5,6 +5,7 @@ import type {
   Tag,
   Relationship,
   CharacterWithRelations,
+  ImportResult,
 } from "../types";
 
 let db: Database | null = null;
@@ -622,24 +623,93 @@ export async function importData(data: {
   characters?: Partial<Character>[];
   projects?: Partial<Project>[];
   tags?: Partial<Tag>[];
-}): Promise<void> {
+}): Promise<ImportResult> {
+  const database = await getDb();
+  const result: ImportResult = {
+    characters: { imported: 0, duplicates: 0, errors: 0 },
+    projects: { imported: 0, duplicates: 0, errors: 0 },
+    tags: { imported: 0, duplicates: 0, errors: 0 },
+  };
+
+  // Import projects (check for duplicates by name)
   if (data.projects) {
+    const existingProjects = await database.select<Project[]>("SELECT name FROM projects");
+    const existingNames = new Set(existingProjects.map((p) => p.name.toLowerCase()));
+
     for (const project of data.projects) {
-      await createProject(project);
+      if (!project.name || existingNames.has(project.name.toLowerCase())) {
+        result.projects.duplicates++;
+        continue;
+      }
+      try {
+        await createProject(project);
+        existingNames.add(project.name.toLowerCase());
+        result.projects.imported++;
+      } catch {
+        result.projects.errors++;
+      }
     }
   }
 
+  // Import tags (check for duplicates by name)
   if (data.tags) {
+    const existingTags = await database.select<Tag[]>("SELECT name FROM tags");
+    const existingNames = new Set(existingTags.map((t) => t.name.toLowerCase()));
+
     for (const tag of data.tags) {
-      await createTag(tag);
+      if (!tag.name || existingNames.has(tag.name.toLowerCase())) {
+        result.tags.duplicates++;
+        continue;
+      }
+      try {
+        await createTag(tag);
+        existingNames.add(tag.name.toLowerCase());
+        result.tags.imported++;
+      } catch {
+        result.tags.errors++;
+      }
     }
   }
 
+  // Import characters (check for duplicates by name)
   if (data.characters) {
+    const existingChars = await database.select<Character[]>("SELECT name FROM characters");
+    const existingNames = new Set(existingChars.map((c) => c.name.toLowerCase()));
+
     for (const character of data.characters) {
-      await createCharacter(character);
+      if (!character.name || existingNames.has(character.name.toLowerCase())) {
+        result.characters.duplicates++;
+        continue;
+      }
+      try {
+        await createCharacter(character);
+        existingNames.add(character.name.toLowerCase());
+        result.characters.imported++;
+      } catch {
+        result.characters.errors++;
+      }
     }
   }
+
+  return result;
+}
+
+// Export a single character (without project/tag references to avoid import errors)
+export async function exportCharacter(id: number): Promise<Partial<Character> | null> {
+  const database = await getDb();
+  const rows = await database.select<Character[]>(
+    "SELECT * FROM characters WHERE id = ?",
+    [id]
+  );
+
+  if (rows.length === 0) return null;
+
+  const character = parseCharacter(rows[0]);
+
+  // Remove fields that would cause issues on import
+  const { id: _id, created_at, updated_at, ...exportData } = character;
+
+  return exportData;
 }
 
 // Helper to parse JSON fields

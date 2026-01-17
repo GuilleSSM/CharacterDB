@@ -7,6 +7,7 @@ import type {
   ViewMode,
   FilterState,
   SortState,
+  ImportResult,
 } from "../types";
 import * as db from "../lib/database";
 
@@ -65,6 +66,14 @@ interface AppState {
   assignTagToCharacter: (characterId: number, tagId: number) => Promise<void>;
   removeTagFromCharacter: (characterId: number, tagId: number) => Promise<void>;
 
+  createRelationship: (
+    characterAId: number,
+    characterBId: number,
+    relationshipType: string,
+    notes?: string
+  ) => Promise<void>;
+  deleteRelationship: (relationshipId: number, characterId: number) => Promise<void>;
+
   setViewMode: (mode: ViewMode) => void;
   setFilter: (filter: Partial<FilterState>) => void;
   setSort: (sort: Partial<SortState>) => void;
@@ -75,8 +84,9 @@ interface AppState {
 
   searchCharacters: (query: string) => Promise<Character[]>;
   exportData: () => Promise<string>;
-  importData: (json: string) => Promise<void>;
-  
+  exportCharacter: (id: number) => Promise<string | null>;
+  importData: (json: string) => Promise<ImportResult>;
+
   toggleTheme: () => void;
 }
 
@@ -298,6 +308,27 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
+  createRelationship: async (characterAId, characterBId, relationshipType, notes) => {
+    await db.createRelationship({
+      character_a_id: characterAId,
+      character_b_id: characterBId,
+      relationship_type: relationshipType,
+      notes,
+    });
+    const { selectedCharacter } = get();
+    if (selectedCharacter?.id === characterAId) {
+      await get().selectCharacter(characterAId);
+    }
+  },
+
+  deleteRelationship: async (relationshipId, characterId) => {
+    await db.deleteRelationship(relationshipId);
+    const { selectedCharacter } = get();
+    if (selectedCharacter?.id === characterId) {
+      await get().selectCharacter(characterId);
+    }
+  },
+
   // UI state
   setViewMode: (mode) => set({ viewMode: mode }),
 
@@ -339,10 +370,17 @@ export const useStore = create<AppState>((set, get) => ({
     return JSON.stringify(data, null, 2);
   },
 
+  exportCharacter: async (id) => {
+    const data = await db.exportCharacter(id);
+    if (!data) return null;
+    return JSON.stringify({ characters: [data] }, null, 2);
+  },
+
   importData: async (json) => {
     const data = JSON.parse(json);
-    await db.importData(data);
+    const result = await db.importData(data);
     await get().loadInitialData();
+    return result;
   },
 
   toggleTheme: () => {

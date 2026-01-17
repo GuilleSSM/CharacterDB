@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { useStore } from "../stores/useStore";
 import type { Project, Tag } from "../types";
+import { getVersion } from "@tauri-apps/api/app";
 import {
   BookOpenIcon,
   TagIcon,
@@ -34,6 +35,11 @@ export function Sidebar() {
 
   const [projectMenuOpen, setProjectMenuOpen] = useState<number | null>(null);
   const [tagMenuOpen, setTagMenuOpen] = useState<number | null>(null);
+  const [version, setVersion] = useState<string>("");
+
+  useEffect(() => {
+    getVersion().then((version) => setVersion(version));
+  }, []);
 
   const handleEditProject = (project: Project) => {
     setProjectMenuOpen(null);
@@ -44,7 +50,7 @@ export function Sidebar() {
     setProjectMenuOpen(null);
     const confirmed = await confirm(
       `Delete project "${project.name}"? Characters in this project will not be deleted.`,
-      { title: "Delete Project", kind: "warning" }
+      { title: "Delete Project", kind: "warning" },
     );
     if (confirmed) {
       deleteProject(project.id);
@@ -60,7 +66,7 @@ export function Sidebar() {
     setTagMenuOpen(null);
     const confirmed = await confirm(
       `Delete tag "${tag.name}"? Characters with this tag will not be deleted.`,
-      { title: "Delete Tag", kind: "warning" }
+      { title: "Delete Tag", kind: "warning" },
     );
     if (confirmed) {
       deleteTag(tag.id);
@@ -147,9 +153,7 @@ export function Sidebar() {
           <button
             onClick={() => setFilter({ showArchived: !filter.showArchived })}
             className={`w-full ${
-              filter.showArchived
-                ? "sidebar-item-active"
-                : "sidebar-item"
+              filter.showArchived ? "sidebar-item-active" : "sidebar-item"
             }`}
           >
             <ArchiveBoxIcon className="w-5 h-5 flex-shrink-0" />
@@ -241,7 +245,9 @@ export function Sidebar() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setProjectMenuOpen(projectMenuOpen === project.id ? null : project.id);
+                      setProjectMenuOpen(
+                        projectMenuOpen === project.id ? null : project.id,
+                      );
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded
                                opacity-0 group-hover/project:opacity-100 hover:bg-parchment-200 dark:hover:bg-ink-700
@@ -425,6 +431,7 @@ export function Sidebar() {
             >
               <SparklesIcon className="w-4 h-4" />
               <span>For storytellers</span>
+              <span className="ml-auto">v{version}</span>
             </motion.div>
           ) : (
             <motion.div

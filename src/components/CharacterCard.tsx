@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { confirm } from "@tauri-apps/plugin-dialog";
+import { confirm, save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { useStore } from "../stores/useStore";
 import type { Character } from "../types";
 import {
@@ -9,6 +10,7 @@ import {
   TrashIcon,
   ArchiveBoxIcon,
   DocumentDuplicateIcon,
+  ArrowDownTrayIcon,
   UserIcon,
 } from "./icons";
 
@@ -23,6 +25,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
     archiveCharacter,
     deleteCharacter,
     createCharacter,
+    exportCharacter,
   } = useStore();
 
   const [showMenu, setShowMenu] = useState(false);
@@ -43,10 +46,30 @@ export function CharacterCard({ character }: CharacterCardProps) {
     await createCharacter({ ...rest, name: `${character.name} (Copy)` });
   };
 
+  const handleExport = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    try {
+      const data = await exportCharacter(character.id);
+      if (data) {
+        const sanitizedName = character.name.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+        const filePath = await save({
+          filters: [{ name: "JSON", extensions: ["json"] }],
+          defaultPath: `${sanitizedName}.json`,
+        });
+        if (filePath) {
+          await writeTextFile(filePath, data);
+        }
+      }
+    } catch (error) {
+      console.error("Export failed:", error);
+    }
+  };
+
   const handleArchive = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowMenu(false);
-    archiveCharacter(character.id, true);
+    archiveCharacter(character.id, !character.is_archived);
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
@@ -169,14 +192,22 @@ export function CharacterCard({ character }: CharacterCardProps) {
                         Duplicate
                       </button>
                       <button
+                        onClick={handleExport}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-700 dark:text-parchment-200
+                                  rounded-lg hover:bg-parchment-100 dark:hover:bg-ink-800 transition-colors"
+                      >
+                        <ArrowDownTrayIcon className="w-4 h-4" />
+                        Export
+                      </button>
+                      <button
                         onClick={handleArchive}
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-700 dark:text-parchment-200
                                   rounded-lg hover:bg-parchment-100 dark:hover:bg-ink-800 transition-colors"
                       >
                         <ArchiveBoxIcon className="w-4 h-4" />
-                        Archive
+                        {character.is_archived ? "Unarchive" : "Archive"}
                       </button>
-                      <div className="my-1 h-px bg-ink-100" />
+                      <div className="my-1 h-px bg-ink-100 dark:bg-ink-700" />
                       <button
                         onClick={handleDelete}
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-accent-burgundy

@@ -4,7 +4,7 @@ import { confirm } from "@tauri-apps/plugin-dialog";
 import { useStore } from "../stores/useStore";
 import { pickAndSaveImage } from "../lib/images";
 import type { CharacterWithRelations } from "../types";
-import { CHARACTER_ROLES } from "../types";
+import { CHARACTER_ROLES, RELATIONSHIP_TYPES } from "../types";
 import {
   XMarkIcon,
   HeartIcon,
@@ -99,7 +99,7 @@ export function CharacterModal() {
 
   const handleArchive = () => {
     if (!selectedCharacter) return;
-    archiveCharacter(selectedCharacter.id, true);
+    archiveCharacter(selectedCharacter.id, !localData.is_archived);
   };
 
   const handleToggleFavorite = () => {
@@ -348,7 +348,11 @@ export function CharacterModal() {
               >
                 <HeartIcon className="w-5 h-5" filled={character.is_favorite} />
               </button>
-              <button onClick={handleArchive} className="btn-icon">
+              <button
+                onClick={handleArchive}
+                className="btn-icon"
+                title={localData.is_archived ? "Unarchive" : "Archive"}
+              >
                 <ArchiveBoxIcon className="w-5 h-5" />
               </button>
               <button
@@ -876,21 +880,123 @@ function StoryTab({ character, onChange }: TabProps) {
 }
 
 function RelationshipsTab({ character }: { character: CharacterWithRelations }) {
+  const { characters, createRelationship, deleteRelationship } = useStore();
   const relationships = character.relationships || [];
+
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedCharacterId, setSelectedCharacterId] = useState<number | "">("");
+  const [selectedType, setSelectedType] = useState<string>(RELATIONSHIP_TYPES[0]);
+  const [notes, setNotes] = useState("");
+
+  // Filter out current character and characters already in relationships
+  const existingRelationIds = new Set(relationships.map((r) => r.related_character?.id));
+  const availableCharacters = characters.filter(
+    (c) => c.id !== character.id && !existingRelationIds.has(c.id) && !c.is_archived
+  );
+
+  const handleAddRelationship = async () => {
+    if (selectedCharacterId === "" || !selectedType) return;
+
+    await createRelationship(character.id, selectedCharacterId, selectedType, notes || undefined);
+    setShowAddForm(false);
+    setSelectedCharacterId("");
+    setSelectedType(RELATIONSHIP_TYPES[0]);
+    setNotes("");
+  };
+
+  const handleDeleteRelationship = async (relationshipId: number) => {
+    const confirmed = await confirm("Remove this relationship?", {
+      title: "Remove Relationship",
+      kind: "warning",
+    });
+    if (confirmed) {
+      await deleteRelationship(relationshipId, character.id);
+    }
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-display font-semibold text-lg text-ink-900">
+        <h3 className="font-display font-semibold text-lg text-ink-900 dark:text-parchment-100">
           Relationships
         </h3>
-        <button className="btn-secondary text-sm">
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="btn-secondary text-sm"
+        >
           <PlusIcon className="w-4 h-4" />
-          Add Relationship
+          {showAddForm ? "Cancel" : "Add Relationship"}
         </button>
       </div>
 
-      {relationships.length === 0 ? (
+      {/* Add relationship form */}
+      <AnimatePresence>
+        {showAddForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="p-4 rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Character</label>
+                  <select
+                    value={selectedCharacterId}
+                    onChange={(e) =>
+                      setSelectedCharacterId(e.target.value ? Number(e.target.value) : "")
+                    }
+                    className="input"
+                  >
+                    <option value="">Select a character...</option>
+                    {availableCharacters.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Relationship Type</label>
+                  <select
+                    value={selectedType}
+                    onChange={(e) => setSelectedType(e.target.value)}
+                    className="input"
+                  >
+                    {RELATIONSHIP_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="label">Notes (optional)</label>
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Additional notes about this relationship..."
+                  className="input"
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleAddRelationship}
+                  disabled={selectedCharacterId === ""}
+                  className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add Relationship
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {relationships.length === 0 && !showAddForm ? (
         <div className="text-center py-12">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-parchment-200 dark:bg-ink-800
                          flex items-center justify-center">
@@ -901,28 +1007,37 @@ function RelationshipsTab({ character }: { character: CharacterWithRelations }) 
             Connect this character to others in your story
           </p>
         </div>
-      ) : (
+      ) : relationships.length > 0 ? (
         <div className="space-y-3">
           {relationships.map((rel) => (
             <div
               key={rel.id}
-              className="flex items-center gap-4 p-4 rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700"
+              className="flex items-center gap-4 p-4 rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 group"
             >
-              <div className="w-10 h-10 rounded-full bg-parchment-200 flex items-center justify-center">
-                <UserIcon className="w-5 h-5 text-ink-400" />
+              <div className="w-10 h-10 rounded-full bg-parchment-200 dark:bg-ink-700 flex items-center justify-center">
+                <UserIcon className="w-5 h-5 text-ink-400 dark:text-ink-500" />
               </div>
               <div className="flex-1">
-                <p className="font-medium text-ink-900">
+                <p className="font-medium text-ink-900 dark:text-parchment-100">
                   {rel.related_character?.name}
                 </p>
-                <p className="text-sm text-ink-600 capitalize">
+                <p className="text-sm text-ink-600 dark:text-ink-400 capitalize">
                   {rel.relationship_type}
+                  {rel.notes && <span className="text-ink-400 dark:text-ink-500"> · {rel.notes}</span>}
                 </p>
               </div>
+              <button
+                onClick={() => handleDeleteRelationship(rel.id)}
+                className="p-2 text-ink-400 hover:text-accent-burgundy rounded-lg
+                          opacity-0 group-hover:opacity-100 transition-all"
+                title="Remove relationship"
+              >
+                <TrashIcon className="w-4 h-4" />
+              </button>
             </div>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
