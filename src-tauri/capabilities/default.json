@@ -30,7 +30,11 @@
     },
     {
       "identifier": "fs:allow-read",
-      "allow": [{ "path": "$APPDATA/**" }, { "path": "$PICTURE/**" }, { "path": "$HOME/**" }]
+      "allow": [
+        { "path": "$APPDATA/**" },
+        { "path": "$PICTURE/**" },
+        { "path": "$HOME/**" }
+      ]
     },
     {
       "identifier": "fs:allow-write",
@@ -45,6 +49,7 @@
     "store:allow-get",
     "store:allow-set",
     "store:allow-save",
-    "store:allow-load"
+    "store:allow-load",
+    "updater:default"
   ]
 }
