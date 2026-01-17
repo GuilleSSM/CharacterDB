@@ -1,5 +1,4 @@
 use tauri::Manager;
-use tauri_plugin_updater::UpdaterExt;
 use tauri_plugin_log::{Target, TargetKind};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -13,6 +12,7 @@ pub fn run() {
         .plugin(tauri_plugin_sql::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
@@ -22,21 +22,6 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
-            let handle = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
-                // Manually trigger a check
-                if let Ok(Some(update)) = handle
-                    .updater()
-                    .expect("failed to get updater")
-                    .check()
-                    .await
-                {
-                    // You can then trigger download and install
-                    let _ = update
-                        .download_and_install(|_progress, _chunk| {}, || {})
-                        .await;
-                }
-            });
             #[cfg(debug_assertions)]
             {
                 let window = app.get_webview_window("main").unwrap();

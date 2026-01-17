@@ -75,6 +75,8 @@
     "store:allow-save",
     "store:allow-load",
     "updater:default",
-    "log:default"
+    "log:default",
+    "process:allow-restart",
+    "process:default"
   ]
 }

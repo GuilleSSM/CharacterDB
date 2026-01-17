@@ -4,6 +4,8 @@ import { confirm } from "@tauri-apps/plugin-dialog";
 import { useStore } from "../stores/useStore";
 import type { Project, Tag } from "../types";
 import { getVersion } from "@tauri-apps/api/app";
+import { check, Update } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 import {
   BookOpenIcon,
   TagIcon,
@@ -16,6 +18,8 @@ import {
   PencilIcon,
   TrashIcon,
   ArchiveBoxIcon,
+  ArrowDownTrayIcon,
+  XMarkIcon,
 } from "./icons";
 
 export function Sidebar() {
@@ -36,6 +40,52 @@ export function Sidebar() {
   const [projectMenuOpen, setProjectMenuOpen] = useState<number | null>(null);
   const [tagMenuOpen, setTagMenuOpen] = useState<number | null>(null);
   const [version, setVersion] = useState<string>("");
+  const [updateAvailable, setUpdateAvailable] = useState<Update | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [contentLength, setContentLength] = useState(0);
+
+  useEffect(() => {
+    check().then((update) => {
+      if (update) {
+        console.log(`Update found: ${update.version} from ${update.date}`);
+        setUpdateAvailable(update);
+      }
+    });
+  }, []);
+
+  async function updateApp(update: Update) {
+    setIsUpdating(true);
+    setDownloadProgress(0);
+    let downloaded = 0;
+
+    try {
+      // Start the download and installation
+      await update.downloadAndInstall((event) => {
+        switch (event.event) {
+          case "Started":
+            setContentLength(event.data.contentLength ?? 0);
+            console.log(
+              `Started downloading ${event.data.contentLength} bytes`,
+            );
+            break;
+          case "Progress":
+            downloaded += event.data.chunkLength;
+            setDownloadProgress(downloaded);
+            break;
+          case "Finished":
+            console.log("Download finished, rewriting binary...");
+            break;
+        }
+      });
+
+      console.log("Update installed successfully. Relaunching...");
+      await relaunch();
+    } catch (error) {
+      console.error("Update failed:", error);
+      setIsUpdating(false);
+    }
+  }
 
   useEffect(() => {
     getVersion().then((version) => setVersion(version));
@@ -89,17 +139,37 @@ export function Sidebar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-2"
+              className="flex flex-col"
             >
-              <div
-                className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-gold to-accent-burgundy
-                            flex items-center justify-center shadow-sm"
-              >
-                <BookOpenIcon className="w-4 h-4 text-parchment-50" />
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-gold to-accent-burgundy
+                              flex items-center justify-center shadow-sm"
+                >
+                  <BookOpenIcon className="w-4 h-4 text-parchment-50" />
+                </div>
+                <span className="font-display font-semibold text-lg text-ink-900 dark:text-parchment-100">
+                  CharacterDB
+                </span>
               </div>
-              <span className="font-display font-semibold text-lg text-ink-900 dark:text-parchment-100">
-                CharacterDB
-              </span>
+              {updateAvailable && !isUpdating && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "100%",
+                  }}
+                >
+                  <button
+                    onClick={() => updateApp(updateAvailable)}
+                    className="mt-0.5 flex items-center gap-1 text-[10px] font-bold text-accent-gold/90 hover:text-accent-burgundy transition-colors uppercase tracking-wider"
+                  >
+                    <ArrowDownTrayIcon className="w-3 h-3" />
+                    Update available
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -445,6 +515,76 @@ export function Sidebar() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Update Progress Dialog */}
+      <AnimatePresence>
+        {isUpdating && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-950/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-md bg-parchment-50 dark:bg-ink-900 rounded-xl shadow-2xl border border-ink-100 dark:border-ink-800 overflow-hidden"
+            >
+              <div className="p-6">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 rounded-full bg-accent-gold/10 flex items-center justify-center">
+                    <ArrowDownTrayIcon className="w-6 h-6 text-accent-gold animate-bounce" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-display font-bold text-ink-900 dark:text-parchment-50">
+                      Updating CharacterDB
+                    </h3>
+                    <p className="text-sm text-ink-500 dark:text-ink-400">
+                      Downloading version {updateAvailable?.version}...
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setIsUpdating(false)}
+                    className="ml-auto p-2 text-ink-400 hover:text-ink-600 dark:hover:text-parchment-200 transition-colors"
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-medium">
+                    <span className="text-ink-500">
+                      {contentLength > 0
+                        ? `${(downloadProgress / 1024 / 1024).toFixed(2)} MB / ${(contentLength / 1024 / 1024).toFixed(2)} MB`
+                        : "Preparing download..."}
+                    </span>
+                    <span className="text-accent-gold font-bold">
+                      {contentLength > 0
+                        ? Math.round((downloadProgress / contentLength) * 100)
+                        : 0}
+                      %
+                    </span>
+                  </div>
+                  <div className="h-2 w-full bg-ink-100 dark:bg-ink-800 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-accent-gold"
+                      initial={{ width: 0 }}
+                      animate={{
+                        width:
+                          contentLength > 0
+                            ? `${(downloadProgress / contentLength) * 100}%`
+                            : "0%",
+                      }}
+                      transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+                    />
+                  </div>
+                </div>
+
+                <p className="mt-6 text-[10px] text-center text-ink-400 italic">
+                  The application will restart automatically once the update is
+                  complete.
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.aside>
   );
 }
