@@ -1,6 +1,6 @@
 [package]
 name = "CharacterDB"
-version = "0.1.8"
+version = "1.0.0"
 description = "A character database for writers"
 authors = ["you"]
 edition = "2021"
