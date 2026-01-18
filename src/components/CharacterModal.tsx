@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { useStore } from "../stores/useStore";
-import { pickAndSaveImage } from "../lib/images";
+import { pickImageForCrop, saveCroppedImage } from "../lib/images";
+import { CropModal } from "./CropModal";
 import type { CharacterWithRelations, Power, PowerCategory, DnDStats, DnDAbilityScores } from "../types";
 import { CHARACTER_ROLES, RELATIONSHIP_TYPES, POWER_CATEGORIES } from "../types";
 import {
@@ -57,12 +58,20 @@ export function CharacterModal() {
   const [pendingChanges, setPendingChanges] = useState<Partial<CharacterWithRelations>>({});
   const [showProjectPicker, setShowProjectPicker] = useState(false);
   const [showTagPicker, setShowTagPicker] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const lastCharacterIdRef = useRef<number | null>(null);
 
-  // Initialize local data when character changes
+  // Initialize local data only when opening a DIFFERENT character
+  // This prevents resetting local edits when the store refreshes after a save
   useEffect(() => {
     if (selectedCharacter) {
-      setLocalData(selectedCharacter);
-      setPendingChanges({});
+      if (selectedCharacter.id !== lastCharacterIdRef.current) {
+        // New character - full reset
+        setLocalData(selectedCharacter);
+        setPendingChanges({});
+        lastCharacterIdRef.current = selectedCharacter.id;
+      }
+      // If same character, keep our local edits - they're either pending save or already saved
     }
   }, [selectedCharacter]);
 
@@ -91,6 +100,7 @@ export function CharacterModal() {
   );
 
   const handleClose = () => {
+    lastCharacterIdRef.current = null; // Reset so reopening shows fresh data
     setCharacterModalOpen(false);
   };
 
@@ -117,13 +127,27 @@ export function CharacterModal() {
 
   const handlePortraitUpload = async () => {
     try {
-      const imagePath = await pickAndSaveImage();
-      if (imagePath) {
-        handleChange("portrait_path", imagePath);
+      const imageDataUrl = await pickImageForCrop();
+      if (imageDataUrl) {
+        setCropImageSrc(imageDataUrl);
       }
     } catch (error) {
-      console.error("Failed to upload portrait:", error);
+      console.error("Failed to pick image:", error);
     }
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    try {
+      const imagePath = await saveCroppedImage(croppedBlob);
+      handleChange("portrait_path", imagePath);
+      setCropImageSrc(null);
+    } catch (error) {
+      console.error("Failed to save cropped image:", error);
+    }
+  };
+
+  const handleCropCancel = () => {
+    setCropImageSrc(null);
   };
 
   if (!selectedCharacter) return null;
@@ -445,6 +469,15 @@ export function CharacterModal() {
             </span>
           </footer>
         </motion.div>
+
+        {/* Crop Modal */}
+        {cropImageSrc && (
+          <CropModal
+            imageSrc={cropImageSrc}
+            onCrop={handleCropComplete}
+            onCancel={handleCropCancel}
+          />
+        )}
       </motion.div>
     </AnimatePresence>
   );
@@ -735,10 +768,11 @@ function getCategoryIcon(category: PowerCategory) {
   }
 }
 
-// Helper to get category color
-function getCategoryColor(category: PowerCategory): string {
+// Helper to get category color based on theme
+function getCategoryColor(category: PowerCategory, isDark: boolean): string {
   const cat = POWER_CATEGORIES.find((c) => c.value === category);
-  return cat?.color || "#c9a227";
+  if (!cat) return isDark ? "#e8c55a" : "#c9a227";
+  return isDark ? cat.darkColor : cat.color;
 }
 
 // Helper to generate a UUID
@@ -762,13 +796,14 @@ function getPowerLevelLabel(level: number): string {
 interface PowerCardProps {
   power: Power;
   isExpanded: boolean;
+  isDark: boolean;
   onToggle: () => void;
   onUpdate: (power: Power) => void;
   onDelete: () => void;
 }
 
-function PowerCard({ power, isExpanded, onToggle, onUpdate, onDelete }: PowerCardProps) {
-  const categoryColor = getCategoryColor(power.category);
+function PowerCard({ power, isExpanded, isDark, onToggle, onUpdate, onDelete }: PowerCardProps) {
+  const categoryColor = getCategoryColor(power.category, isDark);
   const categoryLabel = POWER_CATEGORIES.find((c) => c.value === power.category)?.label || "Utility";
 
   return (
@@ -859,26 +894,29 @@ function PowerCard({ power, isExpanded, onToggle, onUpdate, onDelete }: PowerCar
               <div>
                 <label className="label">Category</label>
                 <div className="flex flex-wrap gap-2">
-                  {POWER_CATEGORIES.map((cat) => (
-                    <button
-                      key={cat.value}
-                      onClick={() => onUpdate({ ...power, category: cat.value })}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all border
-                                text-ink-800 dark:text-parchment-100 ${
-                        power.category === cat.value
-                          ? "ring-2 ring-offset-2 ring-offset-parchment-50 dark:ring-offset-ink-900"
-                          : "opacity-70 hover:opacity-100"
-                      }`}
-                      style={{
-                        backgroundColor: `${cat.color}40`,
-                        borderColor: `${cat.color}70`,
-                        ...(power.category === cat.value ? { ringColor: cat.color } : {}),
-                      }}
-                    >
-                      <span style={{ color: cat.color }}>{getCategoryIcon(cat.value)}</span>
-                      {cat.label}
-                    </button>
-                  ))}
+                  {POWER_CATEGORIES.map((cat) => {
+                    const catColor = isDark ? cat.darkColor : cat.color;
+                    return (
+                      <button
+                        key={cat.value}
+                        onClick={() => onUpdate({ ...power, category: cat.value })}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all border
+                                  text-ink-800 dark:text-parchment-100 ${
+                          power.category === cat.value
+                            ? "ring-2 ring-offset-2 ring-offset-parchment-50 dark:ring-offset-ink-900"
+                            : "opacity-70 hover:opacity-100"
+                        }`}
+                        style={{
+                          backgroundColor: `${catColor}40`,
+                          borderColor: `${catColor}70`,
+                          ...(power.category === cat.value ? { ringColor: catColor } : {}),
+                        }}
+                      >
+                        <span style={{ color: catColor }}>{getCategoryIcon(cat.value)}</span>
+                        {cat.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -944,6 +982,9 @@ const DEFAULT_DND_STATS: DnDStats = {
   maxHitPoints: 10,
   speed: "30 ft",
   proficiencyBonus: 2,
+  level: 1,
+  characterClass: "",
+  subclass: "",
 };
 
 function calculateModifier(score: number): number {
@@ -988,6 +1029,52 @@ function DnDCombatBlock({ stats, onUpdate }: DnDCombatBlockProps) {
       className="overflow-hidden"
     >
       <div className="p-4 rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 space-y-4">
+        {/* Level, Class, Subclass Row */}
+        <div className="grid grid-cols-3 gap-3">
+          {/* Level */}
+          <div className="flex flex-col p-3 rounded-lg bg-parchment-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-700">
+            <label className="text-xs font-medium text-ink-500 dark:text-ink-400 uppercase tracking-wider mb-1">
+              Level
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={stats.level ?? 1}
+              onChange={(e) => onUpdate({ ...stats, level: Math.max(1, Math.min(20, parseInt(e.target.value) || 1)) })}
+              className="w-full text-center text-xl font-bold text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0"
+            />
+          </div>
+
+          {/* Class */}
+          <div className="flex flex-col p-3 rounded-lg bg-parchment-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-700">
+            <label className="text-xs font-medium text-ink-500 dark:text-ink-400 uppercase tracking-wider mb-1">
+              Class
+            </label>
+            <input
+              type="text"
+              value={stats.characterClass ?? ""}
+              onChange={(e) => onUpdate({ ...stats, characterClass: e.target.value })}
+              placeholder="Fighter, Wizard..."
+              className="w-full text-sm font-medium text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0 placeholder:text-ink-400 dark:placeholder:text-ink-500"
+            />
+          </div>
+
+          {/* Subclass */}
+          <div className="flex flex-col p-3 rounded-lg bg-parchment-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-700">
+            <label className="text-xs font-medium text-ink-500 dark:text-ink-400 uppercase tracking-wider mb-1">
+              Subclass
+            </label>
+            <input
+              type="text"
+              value={stats.subclass ?? ""}
+              onChange={(e) => onUpdate({ ...stats, subclass: e.target.value })}
+              placeholder="Champion, Evocation..."
+              className="w-full text-sm font-medium text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0 placeholder:text-ink-400 dark:placeholder:text-ink-500"
+            />
+          </div>
+        </div>
+
         {/* Combat Stats Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* AC */}
@@ -1095,6 +1182,8 @@ function DnDCombatBlock({ stats, onUpdate }: DnDCombatBlockProps) {
 }
 
 function PowersTab({ character, onChange }: TabProps) {
+  const { theme } = useStore();
+  const isDark = theme === "dark";
   const [showAddForm, setShowAddForm] = useState(false);
   const [expandedPowerId, setExpandedPowerId] = useState<string | null>(null);
   const [newPowerName, setNewPowerName] = useState("");
@@ -1260,6 +1349,7 @@ function PowersTab({ character, onChange }: TabProps) {
               key={power.id}
               power={power}
               isExpanded={expandedPowerId === power.id}
+              isDark={isDark}
               onToggle={() =>
                 setExpandedPowerId(expandedPowerId === power.id ? null : power.id)
               }
