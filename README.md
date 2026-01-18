@@ -8,12 +8,12 @@ A desktop application for writers, game masters, and storytellers to create, org
 
 ## What is CharacterDB?
 
-CharacterDB is your personal character bible. Whether you're writing a novel, running a tabletop RPG campaign, developing a video game, or building a fictional universe, CharacterDB helps you keep track of every detail about your characters—their appearance, personality, powers, relationships, and story arcs.
+CharacterDB is your personal character bible. Whether you're writing a novel, running a tabletop RPG campaign, developing a video game, or building a fictional universe, CharacterDB helps you keep track of every detail about your characters. Their appearance, personality, powers, relationships, and story arcs.
 
 **Key highlights:**
 
-- Works completely offline—your characters stay on your computer
-- Automatic saving—never lose your work
+- Works completely offline,your characters stay on your computer
+- Automatic saving, never lose your work
 - Light and dark themes
 - Organize characters by project and custom tags
 - Track relationships between characters
@@ -87,7 +87,7 @@ Upload portrait images for your characters. Portraits appear on character cards 
 
 ### Projects
 
-Organize your characters into projects—perfect for separating different novels, campaigns, or fictional universes.
+Organize your characters into projects. Perfect for separating different novels, campaigns, or fictional universes.
 
 - Create projects with custom names, descriptions, and colors
 - Assign characters to one or more projects
@@ -144,8 +144,8 @@ Toggle between ascending and descending order. Favorited characters always appea
 
 Switch between two display modes:
 
-- **Grid View:** Visual cards showing portraits, names, roles, and key details—great for browsing
-- **List View:** Compact table format with sortable columns—great for scanning many characters
+- **Grid View:** Visual cards showing portraits, names, roles, and key details. Great for browsing.
+- **List View:** Compact table format with sortable columns. Great for scanning many characters.
 
 ---
 
@@ -196,7 +196,7 @@ Download the latest release for your operating system from the [Releases](https:
 2. Click the **+ New Character** button in the header
 3. Fill in the Basic tab with your character's name and essential details
 4. Navigate through the other tabs to add more information
-5. Your changes save automatically—just close the modal when you're done
+5. Your changes save automatically. Just close the modal when you're done.
 
 ### Organizing with Projects
 
