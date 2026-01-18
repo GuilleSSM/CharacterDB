@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useStore } from "./stores/useStore";
 import { isMac } from "./lib/platform";
 import { Sidebar } from "./components/Sidebar";
@@ -44,6 +45,13 @@ function App() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  useEffect(() => {
+    const showWindow = async () => {
+      await getCurrentWindow().show();
+    };
+    showWindow();
+  }, []);
 
   useEffect(() => {
     loadInitialData();

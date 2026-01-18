@@ -92,8 +92,7 @@ interface AppState {
 
 export const useStore = create<AppState>((set, get) => ({
   // Initial state
-  theme: (localStorage.getItem("theme") as "light" | "dark") || 
-         (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
+  theme: (localStorage.getItem("theme") as "light" | "dark") || "dark",
   characters: [],
   projects: [],
   tags: [],
