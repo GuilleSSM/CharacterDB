@@ -33,6 +33,7 @@ interface AppState {
   isTagModalOpen: boolean;
   editingProject: Project | null;
   editingTag: Tag | null;
+  openCharacterMenuId: number | null;
 
   // Actions
   loadInitialData: () => Promise<void>;
@@ -81,6 +82,7 @@ interface AppState {
   setCharacterModalOpen: (open: boolean) => void;
   setProjectModalOpen: (open: boolean, project?: Project | null) => void;
   setTagModalOpen: (open: boolean, tag?: Tag | null) => void;
+  setOpenCharacterMenuId: (id: number | null) => void;
 
   searchCharacters: (query: string) => Promise<Character[]>;
   exportData: () => Promise<string>;
@@ -118,6 +120,7 @@ export const useStore = create<AppState>((set, get) => ({
   isTagModalOpen: false,
   editingProject: null,
   editingTag: null,
+  openCharacterMenuId: null,
 
   // Data loading
   loadInitialData: async () => {
@@ -363,6 +366,10 @@ export const useStore = create<AppState>((set, get) => ({
 
   setTagModalOpen: (open, tag = null) => {
     set({ isTagModalOpen: open, editingTag: tag });
+  },
+
+  setOpenCharacterMenuId: (id) => {
+    set({ openCharacterMenuId: id });
   },
 
   // Search

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { confirm, save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
@@ -26,9 +25,11 @@ export function CharacterCard({ character }: CharacterCardProps) {
     deleteCharacter,
     createCharacter,
     exportCharacter,
+    openCharacterMenuId,
+    setOpenCharacterMenuId,
   } = useStore();
 
-  const [showMenu, setShowMenu] = useState(false);
+  const showMenu = openCharacterMenuId === character.id;
 
   const handleClick = () => {
     selectCharacter(character.id);
@@ -41,14 +42,14 @@ export function CharacterCard({ character }: CharacterCardProps) {
 
   const handleDuplicate = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowMenu(false);
+    setOpenCharacterMenuId(null);
     const { id, created_at, updated_at, ...rest } = character;
     await createCharacter({ ...rest, name: `${character.name} (Copy)` });
   };
 
   const handleExport = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowMenu(false);
+    setOpenCharacterMenuId(null);
     try {
       const data = await exportCharacter(character.id);
       if (data) {
@@ -68,13 +69,13 @@ export function CharacterCard({ character }: CharacterCardProps) {
 
   const handleArchive = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowMenu(false);
+    setOpenCharacterMenuId(null);
     archiveCharacter(character.id, !character.is_archived);
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowMenu(false);
+    setOpenCharacterMenuId(null);
     const confirmed = await confirm(
       `Delete "${character.name}"? This cannot be undone.`,
       { title: "Delete Character", kind: "warning" },
@@ -102,6 +103,11 @@ export function CharacterCard({ character }: CharacterCardProps) {
   return (
     <motion.article
       onClick={handleClick}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpenCharacterMenuId(character.id);
+      }}
       whileHover={{ y: -4 }}
       whileTap={{ scale: 0.98 }}
       className="card-hover group relative overflow-hidden"
@@ -156,7 +162,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
               <motion.button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowMenu(!showMenu);
+                  setOpenCharacterMenuId(showMenu ? null : character.id);
                 }}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -173,7 +179,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
                     className="fixed inset-0 z-10"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setShowMenu(false);
+                      setOpenCharacterMenuId(null);
                     }}
                   />
                   <motion.div

@@ -291,7 +291,16 @@ export function Sidebar() {
 
           <div className="space-y-1">
             {projects.map((project) => (
-              <div key={project.id} className="relative group/project">
+              <div
+                key={project.id}
+                className="relative group/project"
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setTagMenuOpen(null);
+                  setProjectMenuOpen(project.id);
+                }}
+              >
                 <button
                   onClick={() => setFilter({ projectId: project.id })}
                   className={`w-full ${
@@ -323,6 +332,7 @@ export function Sidebar() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      setTagMenuOpen(null);
                       setProjectMenuOpen(
                         projectMenuOpen === project.id ? null : project.id,
                       );
@@ -404,7 +414,16 @@ export function Sidebar() {
 
           <div className="space-y-1">
             {tags.map((tag) => (
-              <div key={tag.id} className="relative group/tag">
+              <div
+                key={tag.id}
+                className="relative group/tag"
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setProjectMenuOpen(null);
+                  setTagMenuOpen(tag.id);
+                }}
+              >
                 <button
                   onClick={() => {
                     const isSelected = filter.tagIds.includes(tag.id);
@@ -443,6 +462,7 @@ export function Sidebar() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      setProjectMenuOpen(null);
                       setTagMenuOpen(tagMenuOpen === tag.id ? null : tag.id);
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded

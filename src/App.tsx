@@ -70,7 +70,10 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-parchment-100 dark:bg-ink-950 text-ink-900 dark:text-parchment-100">
+    <div
+      className="flex h-screen overflow-hidden bg-parchment-100 dark:bg-ink-950 text-ink-900 dark:text-parchment-100"
+      onContextMenu={(e) => e.preventDefault()}
+    >
       {/* Sidebar */}
       <Sidebar />
 
