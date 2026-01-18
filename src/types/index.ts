@@ -1,3 +1,22 @@
+// Power types
+export type PowerCategory = "offensive" | "defensive" | "utility" | "passive" | "transformation";
+
+export const POWER_CATEGORIES: { value: PowerCategory; label: string; color: string }[] = [
+  { value: "offensive", label: "Offensive", color: "#722f37" },      // burgundy
+  { value: "defensive", label: "Defensive", color: "#1e3a5f" },      // navy
+  { value: "utility", label: "Utility", color: "#c9a227" },          // gold
+  { value: "passive", label: "Passive", color: "#2d4a3e" },          // forest
+  { value: "transformation", label: "Transformation", color: "#7b7169" },
+];
+
+export interface Power {
+  id: string;           // UUID
+  name: string;
+  description?: string;
+  category: PowerCategory;
+  powerLevel: number;   // 1-10 scale
+}
+
 export interface Character {
   id: number;
   name: string;
@@ -26,7 +45,7 @@ export interface Character {
   quirks?: string;
 
   // Powers & Abilities
-  powers?: string[];
+  powers?: Power[];
 
   // Background
   origin?: string;

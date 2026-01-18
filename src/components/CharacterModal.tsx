@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { useStore } from "../stores/useStore";
 import { pickAndSaveImage } from "../lib/images";
-import type { CharacterWithRelations } from "../types";
-import { CHARACTER_ROLES, RELATIONSHIP_TYPES } from "../types";
+import type { CharacterWithRelations, Power, PowerCategory } from "../types";
+import { CHARACTER_ROLES, RELATIONSHIP_TYPES, POWER_CATEGORIES } from "../types";
 import {
   XMarkIcon,
   HeartIcon,
@@ -14,6 +14,13 @@ import {
   PhotoIcon,
   PlusIcon,
   TagIcon,
+  SwordIcon,
+  ShieldIcon,
+  WrenchIcon,
+  SparklesIcon,
+  ArrowsRightLeftIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from "./icons";
 
 type TabId = "basic" | "appearance" | "personality" | "powers" | "background" | "story" | "relationships";
@@ -221,13 +228,14 @@ export function CharacterModal() {
                 {character.tags?.map((tag) => (
                   <span
                     key={tag.id}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border
+                              text-ink-800 dark:text-parchment-100"
                     style={{
-                      backgroundColor: `${tag.color}20`,
-                      color: tag.color,
+                      backgroundColor: `${tag.color}35`,
+                      borderColor: `${tag.color}60`,
                     }}
                   >
-                    <TagIcon className="w-3 h-3" />
+                    <TagIcon className="w-3 h-3" style={{ color: tag.color }} />
                     {tag.name}
                     <button
                       onClick={() =>
@@ -709,68 +717,343 @@ function PersonalityTab({ character, onChange }: TabProps) {
   );
 }
 
+// Helper to get category icon
+function getCategoryIcon(category: PowerCategory) {
+  const iconClass = "w-5 h-5";
+  switch (category) {
+    case "offensive":
+      return <SwordIcon className={iconClass} />;
+    case "defensive":
+      return <ShieldIcon className={iconClass} />;
+    case "utility":
+      return <WrenchIcon className={iconClass} />;
+    case "passive":
+      return <SparklesIcon className={iconClass} />;
+    case "transformation":
+      return <ArrowsRightLeftIcon className={iconClass} />;
+  }
+}
+
+// Helper to get category color
+function getCategoryColor(category: PowerCategory): string {
+  const cat = POWER_CATEGORIES.find((c) => c.value === category);
+  return cat?.color || "#c9a227";
+}
+
+// Helper to generate a UUID
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+// Power level labels
+function getPowerLevelLabel(level: number): string {
+  if (level <= 2) return "Minor";
+  if (level <= 4) return "Notable";
+  if (level <= 6) return "Moderate";
+  if (level <= 8) return "Powerful";
+  return "Legendary";
+}
+
+interface PowerCardProps {
+  power: Power;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onUpdate: (power: Power) => void;
+  onDelete: () => void;
+}
+
+function PowerCard({ power, isExpanded, onToggle, onUpdate, onDelete }: PowerCardProps) {
+  const categoryColor = getCategoryColor(power.category);
+  const categoryLabel = POWER_CATEGORIES.find((c) => c.value === power.category)?.label || "Utility";
+
+  return (
+    <motion.div
+      layout
+      className="rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 overflow-hidden"
+    >
+      {/* Collapsed header - always visible */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center gap-3 p-4 text-left hover:bg-parchment-200/50 dark:hover:bg-ink-700/50 transition-colors"
+      >
+        {/* Category icon */}
+        <div
+          className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+          style={{ backgroundColor: `${categoryColor}20`, color: categoryColor }}
+        >
+          {getCategoryIcon(power.category)}
+        </div>
+
+        {/* Name and category */}
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-ink-900 dark:text-parchment-100 truncate">
+            {power.name || "Unnamed Power"}
+          </p>
+          <p className="text-sm text-ink-500 dark:text-ink-400" style={{ color: categoryColor }}>
+            {categoryLabel}
+          </p>
+        </div>
+
+        {/* Power level indicator */}
+        <div className="flex items-center gap-1 shrink-0">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div
+              key={i}
+              className={`w-1.5 h-4 rounded-sm ${
+                i < power.powerLevel
+                  ? "bg-accent-gold"
+                  : "bg-ink-200 dark:bg-ink-600"
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Expand/collapse icon */}
+        {isExpanded ? (
+          <ChevronUpIcon className="w-5 h-5 text-ink-400 shrink-0" />
+        ) : (
+          <ChevronDownIcon className="w-5 h-5 text-ink-400 shrink-0" />
+        )}
+      </button>
+
+      {/* Expanded form */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 space-y-4 border-t border-ink-100 dark:border-ink-700 pt-4">
+              {/* Name input */}
+              <div>
+                <label className="label">Name</label>
+                <input
+                  type="text"
+                  value={power.name}
+                  onChange={(e) => onUpdate({ ...power, name: e.target.value })}
+                  placeholder="Power name..."
+                  className="input"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="label">Description</label>
+                <textarea
+                  value={power.description || ""}
+                  onChange={(e) => onUpdate({ ...power, description: e.target.value })}
+                  placeholder="Describe how this power works, its limitations, or effects..."
+                  className="textarea"
+                  rows={3}
+                />
+              </div>
+
+              {/* Category selector */}
+              <div>
+                <label className="label">Category</label>
+                <div className="flex flex-wrap gap-2">
+                  {POWER_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.value}
+                      onClick={() => onUpdate({ ...power, category: cat.value })}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all border
+                                text-ink-800 dark:text-parchment-100 ${
+                        power.category === cat.value
+                          ? "ring-2 ring-offset-2 ring-offset-parchment-50 dark:ring-offset-ink-900"
+                          : "opacity-70 hover:opacity-100"
+                      }`}
+                      style={{
+                        backgroundColor: `${cat.color}40`,
+                        borderColor: `${cat.color}70`,
+                        ...(power.category === cat.value ? { ringColor: cat.color } : {}),
+                      }}
+                    >
+                      <span style={{ color: cat.color }}>{getCategoryIcon(cat.value)}</span>
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Power level slider */}
+              <div>
+                <label className="label">
+                  Power Level: {power.powerLevel}/10
+                  <span className="ml-2 text-ink-400 dark:text-ink-500 font-normal">
+                    ({getPowerLevelLabel(power.powerLevel)})
+                  </span>
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={power.powerLevel}
+                  onChange={(e) => onUpdate({ ...power, powerLevel: parseInt(e.target.value) })}
+                  className="w-full h-2 bg-ink-200 dark:bg-ink-600 rounded-lg appearance-none cursor-pointer
+                            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
+                            [&::-webkit-slider-thumb]:bg-accent-gold [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer
+                            [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-accent-gold
+                            [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0"
+                />
+                <div className="flex justify-between text-xs text-ink-400 dark:text-ink-500 mt-1">
+                  <span>Minor</span>
+                  <span>Moderate</span>
+                  <span>Legendary</span>
+                </div>
+              </div>
+
+              {/* Delete button */}
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={onDelete}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-accent-burgundy hover:bg-accent-burgundy/10 rounded-lg transition-colors"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                  Delete Power
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
 function PowersTab({ character, onChange }: TabProps) {
-  const [newPower, setNewPower] = useState("");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [expandedPowerId, setExpandedPowerId] = useState<string | null>(null);
+  const [newPowerName, setNewPowerName] = useState("");
+
+  const powers = character.powers || [];
 
   const addPower = () => {
-    if (!newPower.trim()) return;
-    const powers = [...(character.powers || []), newPower.trim()];
-    onChange("powers", powers);
-    setNewPower("");
+    if (!newPowerName.trim()) return;
+
+    const newPower: Power = {
+      id: generateUUID(),
+      name: newPowerName.trim(),
+      category: "utility",
+      powerLevel: 5,
+    };
+
+    onChange("powers", [...powers, newPower]);
+    setNewPowerName("");
+    setShowAddForm(false);
+    setExpandedPowerId(newPower.id); // Auto-expand the new power
   };
 
-  const removePower = (index: number) => {
-    const powers = [...(character.powers || [])];
-    powers.splice(index, 1);
-    onChange("powers", powers);
+  const updatePower = (updatedPower: Power) => {
+    const updatedPowers = powers.map((p) =>
+      p.id === updatedPower.id ? updatedPower : p
+    );
+    onChange("powers", updatedPowers);
+  };
+
+  const deletePower = (powerId: string) => {
+    const updatedPowers = powers.filter((p) => p.id !== powerId);
+    onChange("powers", updatedPowers);
+    if (expandedPowerId === powerId) {
+      setExpandedPowerId(null);
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <label className="label">Powers & Abilities</label>
-        <p className="text-xs text-ink-500 dark:text-ink-400 mb-3">
-          Add special abilities, magical powers, skills, or extraordinary capabilities.
-        </p>
-        <div className="flex flex-wrap gap-2 mb-3">
-          {character.powers?.map((power, index) => (
-            <span
-              key={index}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm
-                        bg-accent-gold/20 dark:bg-accent-gold/10 text-ink-700 dark:text-parchment-200
-                        border border-accent-gold/30 rounded-full"
-            >
-              {power}
-              <button
-                onClick={() => removePower(index)}
-                className="ml-1 hover:text-accent-burgundy"
-              >
-                <XMarkIcon className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-display font-semibold text-lg text-ink-900 dark:text-parchment-100">
+            Powers & Abilities
+          </h3>
+          <p className="text-sm text-ink-500 dark:text-ink-400">
+            Special abilities, magical powers, or extraordinary capabilities
+          </p>
         </div>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newPower}
-            onChange={(e) => setNewPower(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addPower()}
-            placeholder="Add a power or ability..."
-            className="input flex-1"
-          />
-          <button onClick={addPower} className="btn-secondary">
-            <PlusIcon className="w-4 h-4" />
-          </button>
-        </div>
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="btn-secondary text-sm"
+        >
+          <PlusIcon className="w-4 h-4" />
+          {showAddForm ? "Cancel" : "Add Power"}
+        </button>
       </div>
 
-      {(character.powers?.length ?? 0) === 0 && (
-        <div className="text-center py-8 text-ink-400 dark:text-ink-500">
-          <p>No powers or abilities added yet.</p>
-          <p className="text-sm mt-1">Add special abilities, magic, skills, or supernatural powers.</p>
+      {/* Add power form */}
+      <AnimatePresence>
+        {showAddForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="p-4 rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 space-y-4">
+              <div>
+                <label className="label">Power Name</label>
+                <input
+                  type="text"
+                  value={newPowerName}
+                  onChange={(e) => setNewPowerName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addPower()}
+                  placeholder="Enter the power name..."
+                  className="input"
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  className="btn-secondary text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={addPower}
+                  disabled={!newPowerName.trim()}
+                  className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add Power
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Powers list */}
+      {powers.length > 0 ? (
+        <div className="space-y-3">
+          {powers.map((power) => (
+            <PowerCard
+              key={power.id}
+              power={power}
+              isExpanded={expandedPowerId === power.id}
+              onToggle={() =>
+                setExpandedPowerId(expandedPowerId === power.id ? null : power.id)
+              }
+              onUpdate={updatePower}
+              onDelete={() => deletePower(power.id)}
+            />
+          ))}
         </div>
-      )}
+      ) : !showAddForm ? (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-parchment-200 dark:bg-ink-800 flex items-center justify-center">
+            <SparklesIcon className="w-8 h-8 text-ink-400 dark:text-ink-500" />
+          </div>
+          <p className="text-ink-600 dark:text-ink-400 mb-2">No powers yet</p>
+          <p className="text-sm text-ink-400 dark:text-ink-500">
+            Add special abilities, magic, skills, or supernatural powers
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }
