@@ -67,7 +67,7 @@ export function CharacterModal() {
     if (selectedCharacter) {
       if (selectedCharacter.id !== lastCharacterIdRef.current) {
         // New character - full reset
-        setLocalData(selectedCharacter);
+        setLocalData({});
         setPendingChanges({});
         lastCharacterIdRef.current = selectedCharacter.id;
       }
