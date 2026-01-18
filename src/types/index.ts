@@ -17,6 +17,25 @@ export interface Power {
   powerLevel: number;   // 1-10 scale
 }
 
+// D&D Combat Block types
+export interface DnDAbilityScores {
+  strength: number;      // 1-30, default 10
+  dexterity: number;
+  constitution: number;
+  intelligence: number;
+  wisdom: number;
+  charisma: number;
+}
+
+export interface DnDStats {
+  abilityScores: DnDAbilityScores;
+  armorClass?: number;          // AC
+  hitPoints?: number;           // Current HP
+  maxHitPoints?: number;        // Max HP
+  speed?: string;               // "30 ft"
+  proficiencyBonus?: number;    // +2 to +6
+}
+
 export interface Character {
   id: number;
   name: string;
@@ -46,6 +65,10 @@ export interface Character {
 
   // Powers & Abilities
   powers?: Power[];
+
+  // D&D Stats (optional)
+  dnd_enabled?: boolean;
+  dnd_stats?: DnDStats;
 
   // Background
   origin?: string;

@@ -185,6 +185,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: -8 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
+                    onClick={(e) => e.stopPropagation()}
                     className="absolute right-0 top-full mt-1 w-40 bg-parchment-50 dark:bg-ink-900 rounded-xl
                               shadow-paper-lifted border border-ink-100 dark:border-ink-800 overflow-hidden z-20"
                   >
@@ -216,7 +217,7 @@ export function CharacterCard({ character }: CharacterCardProps) {
                       <div className="my-1 h-px bg-ink-100 dark:bg-ink-700" />
                       <button
                         onClick={handleDelete}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-accent-burgundy
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-accent-burgundy dark:text-red-400
                                   rounded-lg hover:bg-accent-burgundy/10 transition-colors"
                       >
                         <TrashIcon className="w-4 h-4" />

@@ -18,6 +18,7 @@ CharacterDB is your personal character bible. Whether you're writing a novel, ru
 - Organize characters by project and custom tags
 - Track relationships between characters
 - Export and backup your entire database
+- D&D mode to track basic stats for your TTRPG characters
 
 ![Empty grid view](assets/sc1.png)
 
@@ -59,6 +60,7 @@ Create rich, detailed profiles for your characters across seven organized tabs:
 - Categorize powers: Offensive, Defensive, Utility, Passive, or Transformation
 - Set power levels on a 1-10 scale with visual indicators
 - Expandable cards for detailed editing
+- D&D mode to keep track of your characters' basic stats
 
 #### Background
 

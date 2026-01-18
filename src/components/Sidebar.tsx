@@ -37,10 +37,11 @@ export function Sidebar() {
     deleteProject,
     deleteTag,
     characters,
+    openProjectMenuId: projectMenuOpen,
+    openTagMenuId: tagMenuOpen,
+    setOpenProjectMenuId: setProjectMenuOpen,
+    setOpenTagMenuId: setTagMenuOpen,
   } = useStore();
-
-  const [projectMenuOpen, setProjectMenuOpen] = useState<number | null>(null);
-  const [tagMenuOpen, setTagMenuOpen] = useState<number | null>(null);
   const [version, setVersion] = useState<string>("");
   const [updateAvailable, setUpdateAvailable] = useState<Update | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -355,6 +356,7 @@ export function Sidebar() {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
+                      onClick={(e) => e.stopPropagation()}
                       className="absolute right-0 top-full mt-1 w-36 bg-parchment-50 dark:bg-ink-900
                                  rounded-lg shadow-paper-hover border border-ink-100 dark:border-ink-800 z-30 p-1"
                     >
@@ -368,7 +370,7 @@ export function Sidebar() {
                       </button>
                       <button
                         onClick={() => handleDeleteProject(project)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-accent-burgundy
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-accent-burgundy dark:text-red-400
                                    rounded hover:bg-accent-burgundy/10 transition-colors"
                       >
                         <TrashIcon className="w-4 h-4" />
@@ -483,6 +485,7 @@ export function Sidebar() {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
+                      onClick={(e) => e.stopPropagation()}
                       className="absolute right-0 top-full mt-1 w-36 bg-parchment-50 dark:bg-ink-900
                                  rounded-lg shadow-paper-hover border border-ink-100 dark:border-ink-800 z-30 p-1"
                     >
@@ -496,7 +499,7 @@ export function Sidebar() {
                       </button>
                       <button
                         onClick={() => handleDeleteTag(tag)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-accent-burgundy
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-accent-burgundy dark:text-red-400
                                    rounded hover:bg-accent-burgundy/10 transition-colors"
                       >
                         <TrashIcon className="w-4 h-4" />

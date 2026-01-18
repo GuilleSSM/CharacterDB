@@ -8,6 +8,7 @@ import type {
   ImportResult,
   Power,
   PowerCategory,
+  DnDStats,
 } from "../types";
 
 let db: Database | null = null;
@@ -135,6 +136,18 @@ async function initializeSchema(): Promise<void> {
   } catch {
     // Column already exists, ignore
   }
+
+  // Migration: Add D&D stats columns if they don't exist
+  try {
+    await database.execute(`ALTER TABLE characters ADD COLUMN dnd_enabled INTEGER DEFAULT 0`);
+  } catch {
+    // Column already exists, ignore
+  }
+  try {
+    await database.execute(`ALTER TABLE characters ADD COLUMN dnd_stats TEXT`);
+  } catch {
+    // Column already exists, ignore
+  }
 }
 
 // Character CRUD operations
@@ -233,10 +246,11 @@ export async function createCharacter(
       name, aliases, role, age, gender, pronouns, species, occupation,
       height, build, hair, eyes, distinguishing_features, appearance_notes,
       personality_traits, strengths, weaknesses, fears, desires, quirks, powers,
+      dnd_enabled, dnd_stats,
       origin, family, education, backstory,
       character_arc, first_appearance, last_appearance, story_notes,
       portrait_path, reference_images
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       character.name || "Unnamed Character",
       character.aliases || null,
@@ -261,6 +275,8 @@ export async function createCharacter(
       character.desires || null,
       character.quirks || null,
       character.powers ? JSON.stringify(character.powers) : null,
+      character.dnd_enabled ? 1 : 0,
+      character.dnd_stats ? JSON.stringify(character.dnd_stats) : null,
       character.origin || null,
       character.family || null,
       character.education || null,
@@ -362,6 +378,16 @@ export async function updateCharacter(
         ? JSON.stringify(character.reference_images)
         : null
     );
+  }
+
+  if ("dnd_enabled" in character) {
+    fields.push("dnd_enabled = ?");
+    values.push(character.dnd_enabled ? 1 : 0);
+  }
+
+  if ("dnd_stats" in character) {
+    fields.push("dnd_stats = ?");
+    values.push(character.dnd_stats ? JSON.stringify(character.dnd_stats) : null);
   }
 
   if (fields.length === 0) return;
@@ -797,5 +823,11 @@ function parseCharacter(row: Character): Character {
       : [],
     is_favorite: Boolean(row.is_favorite),
     is_archived: Boolean(row.is_archived),
+    dnd_enabled: Boolean(row.dnd_enabled),
+    dnd_stats: row.dnd_stats
+      ? typeof row.dnd_stats === "string"
+        ? JSON.parse(row.dnd_stats) as DnDStats
+        : row.dnd_stats
+      : undefined,
   };
 }

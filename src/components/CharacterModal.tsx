@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { useStore } from "../stores/useStore";
 import { pickAndSaveImage } from "../lib/images";
-import type { CharacterWithRelations, Power, PowerCategory } from "../types";
+import type { CharacterWithRelations, Power, PowerCategory, DnDStats, DnDAbilityScores } from "../types";
 import { CHARACTER_ROLES, RELATIONSHIP_TYPES, POWER_CATEGORIES } from "../types";
 import {
   XMarkIcon,
@@ -21,6 +21,7 @@ import {
   ArrowsRightLeftIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  D20Icon,
 } from "./icons";
 
 type TabId = "basic" | "appearance" | "personality" | "powers" | "background" | "story" | "relationships";
@@ -926,12 +927,181 @@ function PowerCard({ power, isExpanded, onToggle, onUpdate, onDelete }: PowerCar
   );
 }
 
+// D&D helper functions
+const DEFAULT_ABILITY_SCORES: DnDAbilityScores = {
+  strength: 10,
+  dexterity: 10,
+  constitution: 10,
+  intelligence: 10,
+  wisdom: 10,
+  charisma: 10,
+};
+
+const DEFAULT_DND_STATS: DnDStats = {
+  abilityScores: DEFAULT_ABILITY_SCORES,
+  armorClass: 10,
+  hitPoints: 10,
+  maxHitPoints: 10,
+  speed: "30 ft",
+  proficiencyBonus: 2,
+};
+
+function calculateModifier(score: number): number {
+  return Math.floor((score - 10) / 2);
+}
+
+function formatModifier(mod: number): string {
+  return mod >= 0 ? `+${mod}` : `${mod}`;
+}
+
+const ABILITY_LABELS: { key: keyof DnDAbilityScores; label: string; short: string }[] = [
+  { key: "strength", label: "Strength", short: "STR" },
+  { key: "dexterity", label: "Dexterity", short: "DEX" },
+  { key: "constitution", label: "Constitution", short: "CON" },
+  { key: "intelligence", label: "Intelligence", short: "INT" },
+  { key: "wisdom", label: "Wisdom", short: "WIS" },
+  { key: "charisma", label: "Charisma", short: "CHA" },
+];
+
+interface DnDCombatBlockProps {
+  stats: DnDStats;
+  onUpdate: (stats: DnDStats) => void;
+}
+
+function DnDCombatBlock({ stats, onUpdate }: DnDCombatBlockProps) {
+  const handleAbilityChange = (ability: keyof DnDAbilityScores, value: number) => {
+    const clampedValue = Math.max(1, Math.min(30, value));
+    onUpdate({
+      ...stats,
+      abilityScores: {
+        ...stats.abilityScores,
+        [ability]: clampedValue,
+      },
+    });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      className="overflow-hidden"
+    >
+      <div className="p-4 rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 space-y-4">
+        {/* Combat Stats Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* AC */}
+          <div className="flex flex-col items-center p-3 rounded-lg bg-parchment-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-700">
+            <label className="text-xs font-medium text-ink-500 dark:text-ink-400 uppercase tracking-wider">
+              AC
+            </label>
+            <input
+              type="number"
+              value={stats.armorClass ?? 10}
+              onChange={(e) => onUpdate({ ...stats, armorClass: parseInt(e.target.value) || 10 })}
+              className="w-16 text-center text-2xl font-bold text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0"
+            />
+          </div>
+
+          {/* HP */}
+          <div className="flex flex-col items-center p-3 rounded-lg bg-parchment-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-700">
+            <label className="text-xs font-medium text-ink-500 dark:text-ink-400 uppercase tracking-wider">
+              HP
+            </label>
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                value={stats.hitPoints ?? 10}
+                onChange={(e) => onUpdate({ ...stats, hitPoints: parseInt(e.target.value) || 0 })}
+                className="w-12 text-center text-xl font-bold text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0"
+              />
+              <span className="text-ink-400">/</span>
+              <input
+                type="number"
+                value={stats.maxHitPoints ?? 10}
+                onChange={(e) => onUpdate({ ...stats, maxHitPoints: parseInt(e.target.value) || 1 })}
+                className="w-12 text-center text-xl font-bold text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0"
+              />
+            </div>
+          </div>
+
+          {/* Speed */}
+          <div className="flex flex-col items-center p-3 rounded-lg bg-parchment-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-700">
+            <label className="text-xs font-medium text-ink-500 dark:text-ink-400 uppercase tracking-wider">
+              Speed
+            </label>
+            <input
+              type="text"
+              value={stats.speed ?? "30 ft"}
+              onChange={(e) => onUpdate({ ...stats, speed: e.target.value })}
+              className="w-20 text-center text-lg font-bold text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0"
+            />
+          </div>
+
+          {/* Proficiency Bonus */}
+          <div className="flex flex-col items-center p-3 rounded-lg bg-parchment-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-700">
+            <label className="text-xs font-medium text-ink-500 dark:text-ink-400 uppercase tracking-wider">
+              Prof
+            </label>
+            <div className="flex items-center">
+              <span className="text-2xl font-bold text-accent-gold">+</span>
+              <input
+                type="number"
+                min={2}
+                max={6}
+                value={stats.proficiencyBonus ?? 2}
+                onChange={(e) => onUpdate({ ...stats, proficiencyBonus: Math.max(2, Math.min(6, parseInt(e.target.value) || 2)) })}
+                className="w-10 text-center text-2xl font-bold text-accent-gold bg-transparent border-none focus:outline-none focus:ring-0"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Ability Scores Grid */}
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {ABILITY_LABELS.map(({ key, short }) => {
+            const score = stats.abilityScores[key];
+            const modifier = calculateModifier(score);
+            return (
+              <div
+                key={key}
+                className="flex flex-col items-center p-2 rounded-lg bg-parchment-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-700"
+              >
+                <label className="text-xs font-bold text-ink-600 dark:text-ink-300 tracking-wider">
+                  {short}
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={score}
+                  onChange={(e) => handleAbilityChange(key, parseInt(e.target.value) || 10)}
+                  className="w-12 text-center text-lg font-bold text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0"
+                />
+                <span
+                  className={`text-sm font-bold ${
+                    modifier >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {formatModifier(modifier)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function PowersTab({ character, onChange }: TabProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [expandedPowerId, setExpandedPowerId] = useState<string | null>(null);
   const [newPowerName, setNewPowerName] = useState("");
 
   const powers = character.powers || [];
+  const dndEnabled = character.dnd_enabled ?? false;
+  const dndStats = character.dnd_stats ?? DEFAULT_DND_STATS;
 
   const addPower = () => {
     if (!newPowerName.trim()) return;
@@ -964,8 +1134,63 @@ function PowersTab({ character, onChange }: TabProps) {
     }
   };
 
+  const handleDnDToggle = () => {
+    const newEnabled = !dndEnabled;
+    onChange("dnd_enabled", newEnabled);
+    // Initialize stats if enabling for the first time and no stats exist
+    if (newEnabled && !character.dnd_stats) {
+      onChange("dnd_stats", DEFAULT_DND_STATS);
+    }
+  };
+
+  const handleDnDStatsUpdate = (stats: DnDStats) => {
+    onChange("dnd_stats", stats);
+  };
+
   return (
     <div className="space-y-4">
+      {/* D&D Mode Toggle */}
+      <div className="flex items-center justify-between p-4 rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+            dndEnabled
+              ? "bg-accent-burgundy/20 text-accent-burgundy"
+              : "bg-ink-200 dark:bg-ink-700 text-ink-400"
+          }`}>
+            <D20Icon className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="font-medium text-ink-900 dark:text-parchment-100">
+              D&D Mode
+            </p>
+            <p className="text-sm text-ink-500 dark:text-ink-400">
+              Track ability scores, AC, HP, and combat stats
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={handleDnDToggle}
+          className={`relative w-12 h-6 rounded-full transition-colors ${
+            dndEnabled
+              ? "bg-accent-burgundy"
+              : "bg-ink-300 dark:bg-ink-600"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+              dndEnabled ? "translate-x-6" : "translate-x-0"
+            }`}
+          />
+        </button>
+      </div>
+
+      {/* D&D Combat Block */}
+      <AnimatePresence>
+        {dndEnabled && (
+          <DnDCombatBlock stats={dndStats} onUpdate={handleDnDStatsUpdate} />
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

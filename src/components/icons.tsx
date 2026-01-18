@@ -651,3 +651,28 @@ export function ChevronUpIcon(props: IconProps) {
     </svg>
   );
 }
+
+// D20 icon for D&D mode
+export function D20Icon(props: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      {...props}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 2L2 8.5v7L12 22l10-6.5v-7L12 2z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 2v20M2 8.5L12 12l10-3.5M2 15.5L12 12l10 3.5"
+      />
+    </svg>
+  );
+}

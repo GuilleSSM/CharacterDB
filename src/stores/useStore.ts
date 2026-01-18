@@ -34,6 +34,8 @@ interface AppState {
   editingProject: Project | null;
   editingTag: Tag | null;
   openCharacterMenuId: number | null;
+  openProjectMenuId: number | null;
+  openTagMenuId: number | null;
 
   // Actions
   loadInitialData: () => Promise<void>;
@@ -83,6 +85,9 @@ interface AppState {
   setProjectModalOpen: (open: boolean, project?: Project | null) => void;
   setTagModalOpen: (open: boolean, tag?: Tag | null) => void;
   setOpenCharacterMenuId: (id: number | null) => void;
+  setOpenProjectMenuId: (id: number | null) => void;
+  setOpenTagMenuId: (id: number | null) => void;
+  closeAllMenus: () => void;
 
   searchCharacters: (query: string) => Promise<Character[]>;
   exportData: () => Promise<string>;
@@ -121,6 +126,8 @@ export const useStore = create<AppState>((set, get) => ({
   editingProject: null,
   editingTag: null,
   openCharacterMenuId: null,
+  openProjectMenuId: null,
+  openTagMenuId: null,
 
   // Data loading
   loadInitialData: async () => {
@@ -370,6 +377,15 @@ export const useStore = create<AppState>((set, get) => ({
 
   setOpenCharacterMenuId: (id) => {
     set({ openCharacterMenuId: id });
+  },
+  setOpenProjectMenuId: (id) => {
+    set({ openProjectMenuId: id });
+  },
+  setOpenTagMenuId: (id) => {
+    set({ openTagMenuId: id });
+  },
+  closeAllMenus: () => {
+    set({ openCharacterMenuId: null, openProjectMenuId: null, openTagMenuId: null });
   },
 
   // Search
