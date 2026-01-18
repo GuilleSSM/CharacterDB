@@ -1,3 +1,7 @@
+.gitignore
 src-tauri/target/
 node_modules/
 dist/
+**/CLAUDE.md
+**/GEMINI.md
+character-database-specs.md
