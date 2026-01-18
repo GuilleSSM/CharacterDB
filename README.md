@@ -1,3 +1,5 @@
+![logo](assets/app-icon.png)
+
 # CharacterDB
 
 A desktop application for writers, game masters, and storytellers to create, organize, and manage their fictional characters. Built with React, TypeScript, and Tauri for a fast, native experience on Windows, macOS, and Linux.
@@ -16,6 +18,12 @@ CharacterDB is your personal character bible. Whether you're writing a novel, ru
 - Organize characters by project and custom tags
 - Track relationships between characters
 - Export and backup your entire database
+
+![Empty grid view](assets/sc1.png)
+
+![Character creation view](assets/sc2.png)
+
+![Filled grid view](assets/sc3.png)
 
 ---
 
