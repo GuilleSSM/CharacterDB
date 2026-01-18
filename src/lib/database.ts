@@ -6,6 +6,8 @@ import type {
   Relationship,
   CharacterWithRelations,
   ImportResult,
+  Power,
+  PowerCategory,
 } from "../types";
 
 let db: Database | null = null;
@@ -728,6 +730,56 @@ export async function exportCharacter(id: number): Promise<Partial<Character> | 
   return exportData;
 }
 
+// Helper to generate a UUID
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+// Helper to migrate old string powers to Power objects
+function migratePowers(powers: unknown): Power[] {
+  if (!powers) return [];
+
+  // Parse if it's a JSON string
+  let parsed = powers;
+  if (typeof powers === "string") {
+    try {
+      parsed = JSON.parse(powers);
+    } catch {
+      // If parsing fails, treat it as a single power name
+      return [{
+        id: generateUUID(),
+        name: powers,
+        category: "utility" as PowerCategory,
+        powerLevel: 5,
+      }];
+    }
+  }
+
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed.map((power: unknown) => {
+    // Already a Power object
+    if (typeof power === "object" && power !== null && "id" in power && "name" in power) {
+      return power as Power;
+    }
+    // Old string format - migrate to Power object
+    if (typeof power === "string") {
+      return {
+        id: generateUUID(),
+        name: power,
+        category: "utility" as PowerCategory,
+        powerLevel: 5,
+      };
+    }
+    // Unknown format, skip
+    return null;
+  }).filter((p): p is Power => p !== null);
+}
+
 // Helper to parse JSON fields
 function parseCharacter(row: Character): Character {
   return {
@@ -737,11 +789,7 @@ function parseCharacter(row: Character): Character {
         ? JSON.parse(row.personality_traits)
         : row.personality_traits
       : [],
-    powers: row.powers
-      ? typeof row.powers === "string"
-        ? JSON.parse(row.powers)
-        : row.powers
-      : [],
+    powers: migratePowers(row.powers),
     reference_images: row.reference_images
       ? typeof row.reference_images === "string"
         ? JSON.parse(row.reference_images)

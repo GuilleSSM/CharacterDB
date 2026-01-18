@@ -3,7 +3,7 @@ import { BookOpenIcon } from "./icons";
 
 export function LoadingScreen() {
   return (
-    <div className="fixed inset-0 bg-parchment-100 flex flex-col items-center justify-center">
+    <div className="fixed inset-0 bg-parchment-100 dark:bg-ink-950 flex flex-col items-center justify-center">
       {/* Decorative background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent-gold/5 rounded-full blur-3xl" />
@@ -34,10 +34,10 @@ export function LoadingScreen() {
         </motion.div>
 
         {/* Title */}
-        <h1 className="font-display font-semibold text-3xl text-ink-900 mb-2">
+        <h1 className="font-display font-semibold text-3xl text-ink-900 dark:text-parchment-100 mb-2">
           CharacterDB
         </h1>
-        <p className="text-ink-500 mb-8">Loading your characters...</p>
+        <p className="text-ink-500 dark:text-parchment-300 mb-8">Loading your characters...</p>
 
         {/* Loading dots */}
         <div className="flex items-center gap-2">
@@ -66,7 +66,7 @@ export function LoadingScreen() {
         transition={{ delay: 0.5 }}
         className="absolute bottom-12 text-center"
       >
-        <div className="font-display italic text-ink-400 text-sm">
+        <div className="font-display italic text-ink-400 dark:text-parchment-400 text-sm">
           "Every character has a story waiting to be told"
         </div>
       </motion.div>
