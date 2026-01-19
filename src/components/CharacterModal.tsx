@@ -1028,7 +1028,7 @@ function PowerCard({
                     e.stopPropagation();
                     onDelete();
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-accent-burgundy hover:bg-accent-burgundy/10 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-accent-burgundy dark:text-red-400 hover:bg-accent-burgundy/10 rounded-lg transition-colors"
                 >
                   <TrashIcon className="w-4 h-4" />
                   Delete Power
