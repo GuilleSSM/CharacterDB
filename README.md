@@ -186,9 +186,10 @@ CharacterDB automatically checks for updates on startup. When a new version is a
 
 ### Installation
 
-Download the latest release for your operating system from the [Releases](https://github.com/your-username/CharacterDB/releases) page:
+Download the latest release for your operating system from the [Releases](https://github.com/GuilleSSM/CharacterDB/releases/latest) page:
 
 - **Windows:** Download the `.exe` installer
+  - Apparently, Smart App Control is causing problems during installation. You can right click > Properties and check the "Unblock" box or disable Smart App Control in the settings.
 - **macOS:** Download the `.dmg` file
 - **Linux:** Download the `.AppImage` or `.deb` package
 
