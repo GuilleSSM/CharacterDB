@@ -1,10 +1,21 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { useStore } from "../stores/useStore";
-import { pickAndSaveImage } from "../lib/images";
-import type { CharacterWithRelations, Power, PowerCategory, DnDStats, DnDAbilityScores } from "../types";
-import { CHARACTER_ROLES, RELATIONSHIP_TYPES, POWER_CATEGORIES } from "../types";
+import { pickImageForCrop, saveCroppedImage } from "../lib/images";
+import { CropModal } from "./CropModal";
+import type {
+  CharacterWithRelations,
+  Power,
+  PowerCategory,
+  DnDStats,
+  DnDAbilityScores,
+} from "../types";
+import {
+  CHARACTER_ROLES,
+  RELATIONSHIP_TYPES,
+  POWER_CATEGORIES,
+} from "../types";
 import {
   XMarkIcon,
   HeartIcon,
@@ -24,7 +35,14 @@ import {
   D20Icon,
 } from "./icons";
 
-type TabId = "basic" | "appearance" | "personality" | "powers" | "background" | "story" | "relationships";
+type TabId =
+  | "basic"
+  | "appearance"
+  | "personality"
+  | "powers"
+  | "background"
+  | "story"
+  | "relationships";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "basic", label: "Basic" },
@@ -53,16 +71,28 @@ export function CharacterModal() {
   } = useStore();
 
   const [activeTab, setActiveTab] = useState<TabId>("basic");
-  const [localData, setLocalData] = useState<Partial<CharacterWithRelations>>({});
-  const [pendingChanges, setPendingChanges] = useState<Partial<CharacterWithRelations>>({});
+  const [localData, setLocalData] = useState<Partial<CharacterWithRelations>>(
+    {},
+  );
+  const [pendingChanges, setPendingChanges] = useState<
+    Partial<CharacterWithRelations>
+  >({});
   const [showProjectPicker, setShowProjectPicker] = useState(false);
   const [showTagPicker, setShowTagPicker] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const lastCharacterIdRef = useRef<number | null>(null);
 
-  // Initialize local data when character changes
+  // Initialize local data only when opening a DIFFERENT character
+  // This prevents resetting local edits when the store refreshes after a save
   useEffect(() => {
     if (selectedCharacter) {
-      setLocalData(selectedCharacter);
-      setPendingChanges({});
+      if (selectedCharacter.id !== lastCharacterIdRef.current) {
+        // New character - full reset
+        setLocalData({});
+        setPendingChanges({});
+        lastCharacterIdRef.current = selectedCharacter.id;
+      }
+      // If same character, keep our local edits - they're either pending save or already saved
     }
   }, [selectedCharacter]);
 
@@ -87,10 +117,11 @@ export function CharacterModal() {
       setLocalData((prev) => ({ ...prev, [field]: value }));
       setPendingChanges((prev) => ({ ...prev, [field]: value }));
     },
-    []
+    [],
   );
 
   const handleClose = () => {
+    lastCharacterIdRef.current = null; // Reset so reopening shows fresh data
     setCharacterModalOpen(false);
   };
 
@@ -98,7 +129,7 @@ export function CharacterModal() {
     if (!selectedCharacter) return;
     const confirmed = await confirm(
       `Delete "${selectedCharacter.name}"? This cannot be undone.`,
-      { title: "Delete Character", kind: "warning" }
+      { title: "Delete Character", kind: "warning" },
     );
     if (confirmed) {
       deleteCharacter(selectedCharacter.id);
@@ -117,13 +148,27 @@ export function CharacterModal() {
 
   const handlePortraitUpload = async () => {
     try {
-      const imagePath = await pickAndSaveImage();
-      if (imagePath) {
-        handleChange("portrait_path", imagePath);
+      const imageDataUrl = await pickImageForCrop();
+      if (imageDataUrl) {
+        setCropImageSrc(imageDataUrl);
       }
     } catch (error) {
-      console.error("Failed to upload portrait:", error);
+      console.error("Failed to pick image:", error);
     }
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    try {
+      const imagePath = await saveCroppedImage(croppedBlob);
+      handleChange("portrait_path", imagePath);
+      setCropImageSrc(null);
+    } catch (error) {
+      console.error("Failed to save cropped image:", error);
+    }
+  };
+
+  const handleCropCancel = () => {
+    setCropImageSrc(null);
   };
 
   if (!selectedCharacter) return null;
@@ -167,8 +212,10 @@ export function CharacterModal() {
                   className="w-20 h-20 rounded-xl object-cover ring-2 ring-parchment-200"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-parchment-200 to-parchment-300 dark:from-ink-800 dark:to-ink-700
-                               flex items-center justify-center ring-2 ring-parchment-200 dark:ring-ink-800">
+                <div
+                  className="w-20 h-20 rounded-xl bg-gradient-to-br from-parchment-200 to-parchment-300 dark:from-ink-800 dark:to-ink-700
+                               flex items-center justify-center ring-2 ring-parchment-200 dark:ring-ink-800"
+                >
                   <UserIcon className="w-10 h-10 text-ink-400" />
                 </div>
               )}
@@ -216,7 +263,10 @@ export function CharacterModal() {
                     {project.name}
                     <button
                       onClick={() =>
-                        removeCharacterFromProject(selectedCharacter.id, project.id)
+                        removeCharacterFromProject(
+                          selectedCharacter.id,
+                          project.id,
+                        )
                       }
                       className="ml-0.5 hover:text-accent-burgundy"
                     >
@@ -260,14 +310,17 @@ export function CharacterModal() {
                   </button>
 
                   {showProjectPicker && (
-                    <div className="absolute top-full left-0 mt-2 w-48 bg-parchment-50 dark:bg-ink-900 rounded-xl
-                                   shadow-paper-hover border border-ink-100 dark:border-ink-800 z-10 p-1">
+                    <div
+                      className="absolute top-full left-0 mt-2 w-48 bg-parchment-50 dark:bg-ink-900 rounded-xl
+                                   shadow-paper-hover border border-ink-100 dark:border-ink-800 z-10 p-1"
+                    >
                       <p className="px-3 py-2 text-xs font-medium text-ink-500 dark:text-ink-400 uppercase">
                         Add to Project
                       </p>
                       {projects
                         .filter(
-                          (p) => !character.projects?.some((cp) => cp.id === p.id)
+                          (p) =>
+                            !character.projects?.some((cp) => cp.id === p.id),
                         )
                         .map((project) => (
                           <button
@@ -275,7 +328,7 @@ export function CharacterModal() {
                             onClick={() => {
                               assignCharacterToProject(
                                 selectedCharacter.id,
-                                project.id
+                                project.id,
                               );
                               setShowProjectPicker(false);
                             }}
@@ -284,13 +337,16 @@ export function CharacterModal() {
                           >
                             <span
                               className="w-2 h-2 rounded-full"
-                              style={{ backgroundColor: project.color || "#c9a227" }}
+                              style={{
+                                backgroundColor: project.color || "#c9a227",
+                              }}
                             />
                             {project.name}
                           </button>
                         ))}
                       {projects.filter(
-                        (p) => !character.projects?.some((cp) => cp.id === p.id)
+                        (p) =>
+                          !character.projects?.some((cp) => cp.id === p.id),
                       ).length === 0 && (
                         <p className="px-3 py-2 text-sm text-ink-400 italic">
                           No more projects
@@ -310,18 +366,25 @@ export function CharacterModal() {
                   </button>
 
                   {showTagPicker && (
-                    <div className="absolute top-full left-0 mt-2 w-48 bg-parchment-50 dark:bg-ink-900 rounded-xl
-                                   shadow-paper-hover border border-ink-100 dark:border-ink-800 z-10 p-1">
+                    <div
+                      className="absolute top-full left-0 mt-2 w-48 bg-parchment-50 dark:bg-ink-900 rounded-xl
+                                   shadow-paper-hover border border-ink-100 dark:border-ink-800 z-10 p-1"
+                    >
                       <p className="px-3 py-2 text-xs font-medium text-ink-500 dark:text-ink-400 uppercase">
                         Add Tag
                       </p>
                       {tags
-                        .filter((t) => !character.tags?.some((ct) => ct.id === t.id))
+                        .filter(
+                          (t) => !character.tags?.some((ct) => ct.id === t.id),
+                        )
                         .map((tag) => (
                           <button
                             key={tag.id}
                             onClick={() => {
-                              assignTagToCharacter(selectedCharacter.id, tag.id);
+                              assignTagToCharacter(
+                                selectedCharacter.id,
+                                tag.id,
+                              );
                               setShowTagPicker(false);
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-700 dark:text-parchment-200
@@ -335,7 +398,7 @@ export function CharacterModal() {
                           </button>
                         ))}
                       {tags.filter(
-                        (t) => !character.tags?.some((ct) => ct.id === t.id)
+                        (t) => !character.tags?.some((ct) => ct.id === t.id),
                       ).length === 0 && (
                         <p className="px-3 py-2 text-sm text-ink-400 italic">
                           No more tags
@@ -413,16 +476,25 @@ export function CharacterModal() {
                   <BasicTab character={character} onChange={handleChange} />
                 )}
                 {activeTab === "appearance" && (
-                  <AppearanceTab character={character} onChange={handleChange} />
+                  <AppearanceTab
+                    character={character}
+                    onChange={handleChange}
+                  />
                 )}
                 {activeTab === "personality" && (
-                  <PersonalityTab character={character} onChange={handleChange} />
+                  <PersonalityTab
+                    character={character}
+                    onChange={handleChange}
+                  />
                 )}
                 {activeTab === "powers" && (
                   <PowersTab character={character} onChange={handleChange} />
                 )}
                 {activeTab === "background" && (
-                  <BackgroundTab character={character} onChange={handleChange} />
+                  <BackgroundTab
+                    character={character}
+                    onChange={handleChange}
+                  />
                 )}
                 {activeTab === "story" && (
                   <StoryTab character={character} onChange={handleChange} />
@@ -435,16 +507,29 @@ export function CharacterModal() {
           </div>
 
           {/* Footer */}
-          <footer className="flex items-center justify-between px-6 py-3 border-t border-ink-100 dark:border-ink-800
-                           bg-parchment-100/50 dark:bg-ink-900/50 text-xs text-ink-500 dark:text-ink-400">
+          <footer
+            className="flex items-center justify-between px-6 py-3 border-t border-ink-100 dark:border-ink-800
+                           bg-parchment-100/50 dark:bg-ink-900/50 text-xs text-ink-500 dark:text-ink-400"
+          >
             <span>
               Created {new Date(character.created_at).toLocaleDateString()}
             </span>
             <span>
-              {Object.keys(pendingChanges).length > 0 ? "Saving..." : "All changes saved"}
+              {Object.keys(pendingChanges).length > 0
+                ? "Saving..."
+                : "All changes saved"}
             </span>
           </footer>
         </motion.div>
+
+        {/* Crop Modal */}
+        {cropImageSrc && (
+          <CropModal
+            imageSrc={cropImageSrc}
+            onCrop={handleCropComplete}
+            onCancel={handleCropCancel}
+          />
+        )}
       </motion.div>
     </AnimatePresence>
   );
@@ -735,17 +820,18 @@ function getCategoryIcon(category: PowerCategory) {
   }
 }
 
-// Helper to get category color
-function getCategoryColor(category: PowerCategory): string {
+// Helper to get category color based on theme
+function getCategoryColor(category: PowerCategory, isDark: boolean): string {
   const cat = POWER_CATEGORIES.find((c) => c.value === category);
-  return cat?.color || "#c9a227";
+  if (!cat) return isDark ? "#e8c55a" : "#c9a227";
+  return isDark ? cat.darkColor : cat.color;
 }
 
 // Helper to generate a UUID
 function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 }
@@ -762,20 +848,27 @@ function getPowerLevelLabel(level: number): string {
 interface PowerCardProps {
   power: Power;
   isExpanded: boolean;
+  isDark: boolean;
   onToggle: () => void;
   onUpdate: (power: Power) => void;
   onDelete: () => void;
 }
 
-function PowerCard({ power, isExpanded, onToggle, onUpdate, onDelete }: PowerCardProps) {
-  const categoryColor = getCategoryColor(power.category);
-  const categoryLabel = POWER_CATEGORIES.find((c) => c.value === power.category)?.label || "Utility";
+function PowerCard({
+  power,
+  isExpanded,
+  isDark,
+  onToggle,
+  onUpdate,
+  onDelete,
+}: PowerCardProps) {
+  const categoryColor = getCategoryColor(power.category, isDark);
+  const categoryLabel =
+    POWER_CATEGORIES.find((c) => c.value === power.category)?.label ||
+    "Utility";
 
   return (
-    <motion.div
-      layout
-      className="rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 overflow-hidden"
-    >
+    <motion.div className="rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 overflow-hidden">
       {/* Collapsed header - always visible */}
       <button
         onClick={onToggle}
@@ -784,7 +877,10 @@ function PowerCard({ power, isExpanded, onToggle, onUpdate, onDelete }: PowerCar
         {/* Category icon */}
         <div
           className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-          style={{ backgroundColor: `${categoryColor}20`, color: categoryColor }}
+          style={{
+            backgroundColor: `${categoryColor}20`,
+            color: categoryColor,
+          }}
         >
           {getCategoryIcon(power.category)}
         </div>
@@ -794,7 +890,10 @@ function PowerCard({ power, isExpanded, onToggle, onUpdate, onDelete }: PowerCar
           <p className="font-medium text-ink-900 dark:text-parchment-100 truncate">
             {power.name || "Unnamed Power"}
           </p>
-          <p className="text-sm text-ink-500 dark:text-ink-400" style={{ color: categoryColor }}>
+          <p
+            className="text-sm text-ink-500 dark:text-ink-400"
+            style={{ color: categoryColor }}
+          >
             {categoryLabel}
           </p>
         </div>
@@ -848,7 +947,9 @@ function PowerCard({ power, isExpanded, onToggle, onUpdate, onDelete }: PowerCar
                 <label className="label">Description</label>
                 <textarea
                   value={power.description || ""}
-                  onChange={(e) => onUpdate({ ...power, description: e.target.value })}
+                  onChange={(e) =>
+                    onUpdate({ ...power, description: e.target.value })
+                  }
                   placeholder="Describe how this power works, its limitations, or effects..."
                   className="textarea"
                   rows={3}
@@ -859,26 +960,35 @@ function PowerCard({ power, isExpanded, onToggle, onUpdate, onDelete }: PowerCar
               <div>
                 <label className="label">Category</label>
                 <div className="flex flex-wrap gap-2">
-                  {POWER_CATEGORIES.map((cat) => (
-                    <button
-                      key={cat.value}
-                      onClick={() => onUpdate({ ...power, category: cat.value })}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all border
-                                text-ink-800 dark:text-parchment-100 ${
-                        power.category === cat.value
-                          ? "ring-2 ring-offset-2 ring-offset-parchment-50 dark:ring-offset-ink-900"
-                          : "opacity-70 hover:opacity-100"
-                      }`}
-                      style={{
-                        backgroundColor: `${cat.color}40`,
-                        borderColor: `${cat.color}70`,
-                        ...(power.category === cat.value ? { ringColor: cat.color } : {}),
-                      }}
-                    >
-                      <span style={{ color: cat.color }}>{getCategoryIcon(cat.value)}</span>
-                      {cat.label}
-                    </button>
-                  ))}
+                  {POWER_CATEGORIES.map((cat) => {
+                    const catColor = isDark ? cat.darkColor : cat.color;
+                    return (
+                      <button
+                        key={cat.value}
+                        onClick={() =>
+                          onUpdate({ ...power, category: cat.value })
+                        }
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all border
+                                  text-ink-800 dark:text-parchment-100 ${
+                                    power.category === cat.value
+                                      ? "ring-2 ring-offset-2 ring-offset-parchment-50 dark:ring-offset-ink-900"
+                                      : "opacity-70 hover:opacity-100"
+                                  }`}
+                        style={{
+                          backgroundColor: `${catColor}40`,
+                          borderColor: `${catColor}70`,
+                          ...(power.category === cat.value
+                            ? { ringColor: catColor }
+                            : {}),
+                        }}
+                      >
+                        <span style={{ color: catColor }}>
+                          {getCategoryIcon(cat.value)}
+                        </span>
+                        {cat.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -895,7 +1005,9 @@ function PowerCard({ power, isExpanded, onToggle, onUpdate, onDelete }: PowerCar
                   min="1"
                   max="10"
                   value={power.powerLevel}
-                  onChange={(e) => onUpdate({ ...power, powerLevel: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    onUpdate({ ...power, powerLevel: parseInt(e.target.value) })
+                  }
                   className="w-full h-2 bg-ink-200 dark:bg-ink-600 rounded-lg appearance-none cursor-pointer
                             [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
                             [&::-webkit-slider-thumb]:bg-accent-gold [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer
@@ -912,8 +1024,11 @@ function PowerCard({ power, isExpanded, onToggle, onUpdate, onDelete }: PowerCar
               {/* Delete button */}
               <div className="flex justify-end pt-2">
                 <button
-                  onClick={onDelete}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-accent-burgundy hover:bg-accent-burgundy/10 rounded-lg transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-accent-burgundy dark:text-red-400 hover:bg-accent-burgundy/10 rounded-lg transition-colors"
                 >
                   <TrashIcon className="w-4 h-4" />
                   Delete Power
@@ -944,6 +1059,9 @@ const DEFAULT_DND_STATS: DnDStats = {
   maxHitPoints: 10,
   speed: "30 ft",
   proficiencyBonus: 2,
+  level: 1,
+  characterClass: "",
+  subclass: "",
 };
 
 function calculateModifier(score: number): number {
@@ -954,7 +1072,11 @@ function formatModifier(mod: number): string {
   return mod >= 0 ? `+${mod}` : `${mod}`;
 }
 
-const ABILITY_LABELS: { key: keyof DnDAbilityScores; label: string; short: string }[] = [
+const ABILITY_LABELS: {
+  key: keyof DnDAbilityScores;
+  label: string;
+  short: string;
+}[] = [
   { key: "strength", label: "Strength", short: "STR" },
   { key: "dexterity", label: "Dexterity", short: "DEX" },
   { key: "constitution", label: "Constitution", short: "CON" },
@@ -969,7 +1091,10 @@ interface DnDCombatBlockProps {
 }
 
 function DnDCombatBlock({ stats, onUpdate }: DnDCombatBlockProps) {
-  const handleAbilityChange = (ability: keyof DnDAbilityScores, value: number) => {
+  const handleAbilityChange = (
+    ability: keyof DnDAbilityScores,
+    value: number,
+  ) => {
     const clampedValue = Math.max(1, Math.min(30, value));
     onUpdate({
       ...stats,
@@ -988,6 +1113,62 @@ function DnDCombatBlock({ stats, onUpdate }: DnDCombatBlockProps) {
       className="overflow-hidden"
     >
       <div className="p-4 rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 space-y-4">
+        {/* Level, Class, Subclass Row */}
+        <div className="grid grid-cols-3 gap-3">
+          {/* Level */}
+          <div className="flex flex-col p-3 rounded-lg bg-parchment-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-700">
+            <label className="text-xs font-medium text-ink-500 dark:text-ink-400 uppercase tracking-wider mb-1">
+              Level
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={stats.level ?? 1}
+              onChange={(e) =>
+                onUpdate({
+                  ...stats,
+                  level: Math.max(
+                    1,
+                    Math.min(20, parseInt(e.target.value) || 1),
+                  ),
+                })
+              }
+              className="w-full text-center text-xl font-bold text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0"
+            />
+          </div>
+
+          {/* Class */}
+          <div className="flex flex-col p-3 rounded-lg bg-parchment-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-700">
+            <label className="text-xs font-medium text-ink-500 dark:text-ink-400 uppercase tracking-wider mb-1">
+              Class
+            </label>
+            <input
+              type="text"
+              value={stats.characterClass ?? ""}
+              onChange={(e) =>
+                onUpdate({ ...stats, characterClass: e.target.value })
+              }
+              placeholder="Fighter, Wizard..."
+              className="w-full text-sm font-medium text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0 placeholder:text-ink-400 dark:placeholder:text-ink-500"
+            />
+          </div>
+
+          {/* Subclass */}
+          <div className="flex flex-col p-3 rounded-lg bg-parchment-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-700">
+            <label className="text-xs font-medium text-ink-500 dark:text-ink-400 uppercase tracking-wider mb-1">
+              Subclass
+            </label>
+            <input
+              type="text"
+              value={stats.subclass ?? ""}
+              onChange={(e) => onUpdate({ ...stats, subclass: e.target.value })}
+              placeholder="Champion, Evocation..."
+              className="w-full text-sm font-medium text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0 placeholder:text-ink-400 dark:placeholder:text-ink-500"
+            />
+          </div>
+        </div>
+
         {/* Combat Stats Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* AC */}
@@ -998,7 +1179,12 @@ function DnDCombatBlock({ stats, onUpdate }: DnDCombatBlockProps) {
             <input
               type="number"
               value={stats.armorClass ?? 10}
-              onChange={(e) => onUpdate({ ...stats, armorClass: parseInt(e.target.value) || 10 })}
+              onChange={(e) =>
+                onUpdate({
+                  ...stats,
+                  armorClass: parseInt(e.target.value) || 10,
+                })
+              }
               className="w-16 text-center text-2xl font-bold text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0"
             />
           </div>
@@ -1012,14 +1198,24 @@ function DnDCombatBlock({ stats, onUpdate }: DnDCombatBlockProps) {
               <input
                 type="number"
                 value={stats.hitPoints ?? 10}
-                onChange={(e) => onUpdate({ ...stats, hitPoints: parseInt(e.target.value) || 0 })}
+                onChange={(e) =>
+                  onUpdate({
+                    ...stats,
+                    hitPoints: parseInt(e.target.value) || 0,
+                  })
+                }
                 className="w-12 text-center text-xl font-bold text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0"
               />
               <span className="text-ink-400">/</span>
               <input
                 type="number"
                 value={stats.maxHitPoints ?? 10}
-                onChange={(e) => onUpdate({ ...stats, maxHitPoints: parseInt(e.target.value) || 1 })}
+                onChange={(e) =>
+                  onUpdate({
+                    ...stats,
+                    maxHitPoints: parseInt(e.target.value) || 1,
+                  })
+                }
                 className="w-12 text-center text-xl font-bold text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0"
               />
             </div>
@@ -1050,7 +1246,15 @@ function DnDCombatBlock({ stats, onUpdate }: DnDCombatBlockProps) {
                 min={2}
                 max={6}
                 value={stats.proficiencyBonus ?? 2}
-                onChange={(e) => onUpdate({ ...stats, proficiencyBonus: Math.max(2, Math.min(6, parseInt(e.target.value) || 2)) })}
+                onChange={(e) =>
+                  onUpdate({
+                    ...stats,
+                    proficiencyBonus: Math.max(
+                      2,
+                      Math.min(6, parseInt(e.target.value) || 2),
+                    ),
+                  })
+                }
                 className="w-10 text-center text-2xl font-bold text-accent-gold bg-transparent border-none focus:outline-none focus:ring-0"
               />
             </div>
@@ -1075,12 +1279,16 @@ function DnDCombatBlock({ stats, onUpdate }: DnDCombatBlockProps) {
                   min={1}
                   max={30}
                   value={score}
-                  onChange={(e) => handleAbilityChange(key, parseInt(e.target.value) || 10)}
+                  onChange={(e) =>
+                    handleAbilityChange(key, parseInt(e.target.value) || 10)
+                  }
                   className="w-12 text-center text-lg font-bold text-ink-900 dark:text-parchment-100 bg-transparent border-none focus:outline-none focus:ring-0"
                 />
                 <span
                   className={`text-sm font-bold ${
-                    modifier >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                    modifier >= 0
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-red-600 dark:text-red-400"
                   }`}
                 >
                   {formatModifier(modifier)}
@@ -1095,6 +1303,8 @@ function DnDCombatBlock({ stats, onUpdate }: DnDCombatBlockProps) {
 }
 
 function PowersTab({ character, onChange }: TabProps) {
+  const { theme } = useStore();
+  const isDark = theme === "dark";
   const [showAddForm, setShowAddForm] = useState(false);
   const [expandedPowerId, setExpandedPowerId] = useState<string | null>(null);
   const [newPowerName, setNewPowerName] = useState("");
@@ -1121,7 +1331,7 @@ function PowersTab({ character, onChange }: TabProps) {
 
   const updatePower = (updatedPower: Power) => {
     const updatedPowers = powers.map((p) =>
-      p.id === updatedPower.id ? updatedPower : p
+      p.id === updatedPower.id ? updatedPower : p,
     );
     onChange("powers", updatedPowers);
   };
@@ -1152,11 +1362,13 @@ function PowersTab({ character, onChange }: TabProps) {
       {/* D&D Mode Toggle */}
       <div className="flex items-center justify-between p-4 rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-            dndEnabled
-              ? "bg-accent-burgundy/20 text-accent-burgundy"
-              : "bg-ink-200 dark:bg-ink-700 text-ink-400"
-          }`}>
+          <div
+            className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+              dndEnabled
+                ? "bg-accent-burgundy/20 text-accent-burgundy"
+                : "bg-ink-200 dark:bg-ink-700 text-ink-400"
+            }`}
+          >
             <D20Icon className="w-5 h-5" />
           </div>
           <div>
@@ -1171,9 +1383,7 @@ function PowersTab({ character, onChange }: TabProps) {
         <button
           onClick={handleDnDToggle}
           className={`relative w-12 h-6 rounded-full transition-colors ${
-            dndEnabled
-              ? "bg-accent-burgundy"
-              : "bg-ink-300 dark:bg-ink-600"
+            dndEnabled ? "bg-accent-burgundy" : "bg-ink-300 dark:bg-ink-600"
           }`}
         >
           <span
@@ -1260,8 +1470,11 @@ function PowersTab({ character, onChange }: TabProps) {
               key={power.id}
               power={power}
               isExpanded={expandedPowerId === power.id}
+              isDark={isDark}
               onToggle={() =>
-                setExpandedPowerId(expandedPowerId === power.id ? null : power.id)
+                setExpandedPowerId(
+                  expandedPowerId === power.id ? null : power.id,
+                )
               }
               onUpdate={updatePower}
               onDelete={() => deletePower(power.id)}
@@ -1387,27 +1600,67 @@ function StoryTab({ character, onChange }: TabProps) {
   );
 }
 
-function RelationshipsTab({ character }: { character: CharacterWithRelations }) {
+function RelationshipsTab({
+  character,
+}: {
+  character: CharacterWithRelations;
+}) {
   const { characters, createRelationship, deleteRelationship } = useStore();
   const relationships = character.relationships || [];
 
   const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedCharacterId, setSelectedCharacterId] = useState<number | "">("");
-  const [selectedType, setSelectedType] = useState<string>(RELATIONSHIP_TYPES[0]);
+  const [selectedCharacterId, setSelectedCharacterId] = useState<number | "">(
+    "",
+  );
+  const [selectedType, setSelectedType] = useState<string>(
+    RELATIONSHIP_TYPES[0],
+  );
   const [notes, setNotes] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Filter out current character and characters already in relationships
-  const existingRelationIds = new Set(relationships.map((r) => r.related_character?.id));
-  const availableCharacters = characters.filter(
-    (c) => c.id !== character.id && !existingRelationIds.has(c.id) && !c.is_archived
+  const existingRelationIds = new Set(
+    relationships.map((r) => r.related_character?.id),
   );
+  const availableCharacters = characters.filter(
+    (c) =>
+      c.id !== character.id && !existingRelationIds.has(c.id) && !c.is_archived,
+  );
+
+  const filteredCharacters = availableCharacters.filter((c) =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
+  const selectedCharacter = characters.find((c) => c.id === selectedCharacterId);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleAddRelationship = async () => {
     if (selectedCharacterId === "" || !selectedType) return;
 
-    await createRelationship(character.id, selectedCharacterId, selectedType, notes || undefined);
+    await createRelationship(
+      character.id,
+      selectedCharacterId,
+      selectedType,
+      notes || undefined,
+    );
     setShowAddForm(false);
     setSelectedCharacterId("");
+    setSearchQuery("");
     setSelectedType(RELATIONSHIP_TYPES[0]);
     setNotes("");
   };
@@ -1448,22 +1701,61 @@ function RelationshipsTab({ character }: { character: CharacterWithRelations }) 
           >
             <div className="p-4 rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="relative" ref={dropdownRef}>
                   <label className="label">Character</label>
-                  <select
-                    value={selectedCharacterId}
-                    onChange={(e) =>
-                      setSelectedCharacterId(e.target.value ? Number(e.target.value) : "")
-                    }
-                    className="input"
-                  >
-                    <option value="">Select a character...</option>
-                    {availableCharacters.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={isDropdownOpen ? searchQuery : selectedCharacter?.name || ""}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setIsDropdownOpen(true);
+                      }}
+                      onFocus={() => {
+                        setSearchQuery("");
+                        setIsDropdownOpen(true);
+                      }}
+                      placeholder="Search character..."
+                      className="input w-full pr-10"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <ChevronDownIcon className="w-4 h-4 text-ink-400" />
+                    </div>
+                  </div>
+
+                  {/* Character Dropdown */}
+                  <AnimatePresence>
+                    {isDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute z-20 mt-1 w-full max-h-60 overflow-y-auto rounded-lg
+                                   bg-parchment-50 dark:bg-ink-900 shadow-paper-hover border border-ink-100 dark:border-ink-700 p-1"
+                      >
+                        {filteredCharacters.length > 0 ? (
+                          filteredCharacters.map((c) => (
+                            <button
+                              key={c.id}
+                              onClick={() => {
+                                setSelectedCharacterId(c.id);
+                                setSearchQuery(c.name);
+                                setIsDropdownOpen(false);
+                              }}
+                              className="w-full text-left px-3 py-2 text-sm rounded-md transition-colors
+                                         hover:bg-parchment-100 dark:hover:bg-ink-800 text-ink-700 dark:text-parchment-200"
+                            >
+                              {c.name}
+                            </button>
+                          ))
+                        ) : (
+                          <p className="px-3 py-2 text-sm text-ink-400 italic">
+                            No characters found
+                          </p>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
                 <div>
                   <label className="label">Relationship Type</label>
@@ -1506,11 +1798,15 @@ function RelationshipsTab({ character }: { character: CharacterWithRelations }) 
 
       {relationships.length === 0 && !showAddForm ? (
         <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-parchment-200 dark:bg-ink-800
-                         flex items-center justify-center">
+          <div
+            className="w-16 h-16 mx-auto mb-4 rounded-full bg-parchment-200 dark:bg-ink-800
+                         flex items-center justify-center"
+          >
             <UserIcon className="w-8 h-8 text-ink-400 dark:text-ink-500" />
           </div>
-          <p className="text-ink-600 dark:text-ink-400 mb-2">No relationships yet</p>
+          <p className="text-ink-600 dark:text-ink-400 mb-2">
+            No relationships yet
+          </p>
           <p className="text-sm text-ink-400 dark:text-ink-500">
             Connect this character to others in your story
           </p>
@@ -1531,7 +1827,12 @@ function RelationshipsTab({ character }: { character: CharacterWithRelations }) 
                 </p>
                 <p className="text-sm text-ink-600 dark:text-ink-400 capitalize">
                   {rel.relationship_type}
-                  {rel.notes && <span className="text-ink-400 dark:text-ink-500"> · {rel.notes}</span>}
+                  {rel.notes && (
+                    <span className="text-ink-400 dark:text-ink-500">
+                      {" "}
+                      · {rel.notes}
+                    </span>
+                  )}
                 </p>
               </div>
               <button

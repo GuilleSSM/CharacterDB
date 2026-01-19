@@ -1,12 +1,12 @@
 // Power types
 export type PowerCategory = "offensive" | "defensive" | "utility" | "passive" | "transformation";
 
-export const POWER_CATEGORIES: { value: PowerCategory; label: string; color: string }[] = [
-  { value: "offensive", label: "Offensive", color: "#722f37" },      // burgundy
-  { value: "defensive", label: "Defensive", color: "#1e3a5f" },      // navy
-  { value: "utility", label: "Utility", color: "#c9a227" },          // gold
-  { value: "passive", label: "Passive", color: "#2d4a3e" },          // forest
-  { value: "transformation", label: "Transformation", color: "#7b7169" },
+export const POWER_CATEGORIES: { value: PowerCategory; label: string; color: string; darkColor: string }[] = [
+  { value: "offensive", label: "Offensive", color: "#722f37", darkColor: "#e07a88" },       // burgundy -> lighter pink-red
+  { value: "defensive", label: "Defensive", color: "#1e3a5f", darkColor: "#6ba3d6" },       // navy -> lighter blue
+  { value: "utility", label: "Utility", color: "#c9a227", darkColor: "#e8c55a" },           // gold -> brighter gold
+  { value: "passive", label: "Passive", color: "#2d4a3e", darkColor: "#6bb89d" },           // forest -> lighter teal
+  { value: "transformation", label: "Transformation", color: "#7b7169", darkColor: "#b5ada5" }, // gray-brown -> lighter
 ];
 
 export interface Power {
@@ -34,6 +34,9 @@ export interface DnDStats {
   maxHitPoints?: number;        // Max HP
   speed?: string;               // "30 ft"
   proficiencyBonus?: number;    // +2 to +6
+  level?: number;               // Character level 1-20
+  characterClass?: string;      // e.g., "Fighter", "Wizard"
+  subclass?: string;            // e.g., "Champion", "School of Evocation"
 }
 
 export interface Character {
