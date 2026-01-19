@@ -1616,6 +1616,9 @@ function RelationshipsTab({
     RELATIONSHIP_TYPES[0],
   );
   const [notes, setNotes] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Filter out current character and characters already in relationships
   const existingRelationIds = new Set(
@@ -1625,6 +1628,26 @@ function RelationshipsTab({
     (c) =>
       c.id !== character.id && !existingRelationIds.has(c.id) && !c.is_archived,
   );
+
+  const filteredCharacters = availableCharacters.filter((c) =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
+  const selectedCharacter = characters.find((c) => c.id === selectedCharacterId);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleAddRelationship = async () => {
     if (selectedCharacterId === "" || !selectedType) return;
@@ -1637,6 +1660,7 @@ function RelationshipsTab({
     );
     setShowAddForm(false);
     setSelectedCharacterId("");
+    setSearchQuery("");
     setSelectedType(RELATIONSHIP_TYPES[0]);
     setNotes("");
   };
@@ -1677,24 +1701,61 @@ function RelationshipsTab({
           >
             <div className="p-4 rounded-xl bg-parchment-100 dark:bg-ink-800 border border-ink-100 dark:border-ink-700 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="relative" ref={dropdownRef}>
                   <label className="label">Character</label>
-                  <select
-                    value={selectedCharacterId}
-                    onChange={(e) =>
-                      setSelectedCharacterId(
-                        e.target.value ? Number(e.target.value) : "",
-                      )
-                    }
-                    className="input"
-                  >
-                    <option value="">Select a character...</option>
-                    {availableCharacters.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={isDropdownOpen ? searchQuery : selectedCharacter?.name || ""}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setIsDropdownOpen(true);
+                      }}
+                      onFocus={() => {
+                        setSearchQuery("");
+                        setIsDropdownOpen(true);
+                      }}
+                      placeholder="Search character..."
+                      className="input w-full pr-10"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <ChevronDownIcon className="w-4 h-4 text-ink-400" />
+                    </div>
+                  </div>
+
+                  {/* Character Dropdown */}
+                  <AnimatePresence>
+                    {isDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute z-20 mt-1 w-full max-h-60 overflow-y-auto rounded-lg
+                                   bg-parchment-50 dark:bg-ink-900 shadow-paper-hover border border-ink-100 dark:border-ink-700 p-1"
+                      >
+                        {filteredCharacters.length > 0 ? (
+                          filteredCharacters.map((c) => (
+                            <button
+                              key={c.id}
+                              onClick={() => {
+                                setSelectedCharacterId(c.id);
+                                setSearchQuery(c.name);
+                                setIsDropdownOpen(false);
+                              }}
+                              className="w-full text-left px-3 py-2 text-sm rounded-md transition-colors
+                                         hover:bg-parchment-100 dark:hover:bg-ink-800 text-ink-700 dark:text-parchment-200"
+                            >
+                              {c.name}
+                            </button>
+                          ))
+                        ) : (
+                          <p className="px-3 py-2 text-sm text-ink-400 italic">
+                            No characters found
+                          </p>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
                 <div>
                   <label className="label">Relationship Type</label>
