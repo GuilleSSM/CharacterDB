@@ -10,6 +10,7 @@ import type {
   PowerCategory,
   DnDStats,
 } from "../types";
+import { readImageAsBase64, saveBase64Image } from "./images";
 
 let db: Database | null = null;
 
@@ -139,7 +140,9 @@ async function initializeSchema(): Promise<void> {
 
   // Migration: Add D&D stats columns if they don't exist
   try {
-    await database.execute(`ALTER TABLE characters ADD COLUMN dnd_enabled INTEGER DEFAULT 0`);
+    await database.execute(
+      `ALTER TABLE characters ADD COLUMN dnd_enabled INTEGER DEFAULT 0`,
+    );
   } catch {
     // Column already exists, ignore
   }
@@ -151,23 +154,25 @@ async function initializeSchema(): Promise<void> {
 }
 
 // Character CRUD operations
-export async function getAllCharacters(showArchived = false): Promise<Character[]> {
+export async function getAllCharacters(
+  showArchived = false,
+): Promise<Character[]> {
   const database = await getDb();
   const rows = await database.select<Character[]>(
     showArchived
       ? "SELECT * FROM characters ORDER BY updated_at DESC"
-      : "SELECT * FROM characters WHERE is_archived = 0 ORDER BY updated_at DESC"
+      : "SELECT * FROM characters WHERE is_archived = 0 ORDER BY updated_at DESC",
   );
   return rows.map(parseCharacter);
 }
 
 export async function getCharacterById(
-  id: number
+  id: number,
 ): Promise<CharacterWithRelations | null> {
   const database = await getDb();
   const rows = await database.select<Character[]>(
     "SELECT * FROM characters WHERE id = ?",
-    [id]
+    [id],
   );
 
   if (rows.length === 0) return null;
@@ -179,7 +184,7 @@ export async function getCharacterById(
     `SELECT p.* FROM projects p
      JOIN character_projects cp ON p.id = cp.project_id
      WHERE cp.character_id = ?`,
-    [id]
+    [id],
   );
 
   // Get tags
@@ -187,7 +192,7 @@ export async function getCharacterById(
     `SELECT t.* FROM tags t
      JOIN character_tags ct ON t.id = ct.tag_id
      WHERE ct.character_id = ?`,
-    [id]
+    [id],
   );
 
   // Get relationships
@@ -198,7 +203,7 @@ export async function getCharacterById(
      FROM relationships r
      JOIN characters c ON r.character_b_id = c.id
      WHERE r.character_a_id = ?`,
-    [id]
+    [id],
   );
 
   const relationshipsB = await database.select<
@@ -208,7 +213,7 @@ export async function getCharacterById(
      FROM relationships r
      JOIN characters c ON r.character_a_id = c.id
      WHERE r.character_b_id = ?`,
-    [id]
+    [id],
   );
 
   return {
@@ -237,7 +242,7 @@ export async function getCharacterById(
 }
 
 export async function createCharacter(
-  character: Partial<Character>
+  character: Partial<Character>,
 ): Promise<number> {
   const database = await getDb();
 
@@ -289,7 +294,7 @@ export async function createCharacter(
       character.reference_images
         ? JSON.stringify(character.reference_images)
         : null,
-    ]
+    ],
   );
 
   return result.lastInsertId ?? 0;
@@ -297,7 +302,7 @@ export async function createCharacter(
 
 export async function updateCharacter(
   id: number,
-  character: Partial<Character>
+  character: Partial<Character>,
 ): Promise<void> {
   const database = await getDb();
 
@@ -362,7 +367,7 @@ export async function updateCharacter(
     values.push(
       character.personality_traits
         ? JSON.stringify(character.personality_traits)
-        : null
+        : null,
     );
   }
 
@@ -376,7 +381,7 @@ export async function updateCharacter(
     values.push(
       character.reference_images
         ? JSON.stringify(character.reference_images)
-        : null
+        : null,
     );
   }
 
@@ -387,7 +392,9 @@ export async function updateCharacter(
 
   if ("dnd_stats" in character) {
     fields.push("dnd_stats = ?");
-    values.push(character.dnd_stats ? JSON.stringify(character.dnd_stats) : null);
+    values.push(
+      character.dnd_stats ? JSON.stringify(character.dnd_stats) : null,
+    );
   }
 
   if (fields.length === 0) return;
@@ -397,7 +404,7 @@ export async function updateCharacter(
 
   await database.execute(
     `UPDATE characters SET ${fields.join(", ")} WHERE id = ?`,
-    values
+    values,
   );
 }
 
@@ -408,12 +415,12 @@ export async function deleteCharacter(id: number): Promise<void> {
 
 export async function archiveCharacter(
   id: number,
-  archived: boolean
+  archived: boolean,
 ): Promise<void> {
   const database = await getDb();
   await database.execute(
     "UPDATE characters SET is_archived = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-    [archived ? 1 : 0, id]
+    [archived ? 1 : 0, id],
   );
 }
 
@@ -421,27 +428,33 @@ export async function archiveCharacter(
 export async function getAllProjects(): Promise<Project[]> {
   const database = await getDb();
   return database.select<Project[]>(
-    "SELECT * FROM projects ORDER BY updated_at DESC"
+    "SELECT * FROM projects ORDER BY updated_at DESC",
   );
 }
 
-export async function createProject(project: Partial<Project>): Promise<number> {
+export async function createProject(
+  project: Partial<Project>,
+): Promise<number> {
   const database = await getDb();
   const result = await database.execute(
     "INSERT INTO projects (name, description, color) VALUES (?, ?, ?)",
-    [project.name || "Untitled Project", project.description || null, project.color || "#c9a227"]
+    [
+      project.name || "Untitled Project",
+      project.description || null,
+      project.color || "#c9a227",
+    ],
   );
   return result.lastInsertId ?? 0;
 }
 
 export async function updateProject(
   id: number,
-  project: Partial<Project>
+  project: Partial<Project>,
 ): Promise<void> {
   const database = await getDb();
   await database.execute(
     "UPDATE projects SET name = ?, description = ?, color = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-    [project.name, project.description || null, project.color || "#c9a227", id]
+    [project.name, project.description || null, project.color || "#c9a227", id],
   );
 }
 
@@ -452,29 +465,29 @@ export async function deleteProject(id: number): Promise<void> {
 
 export async function assignCharacterToProject(
   characterId: number,
-  projectId: number
+  projectId: number,
 ): Promise<void> {
   const database = await getDb();
   await database.execute(
     "INSERT OR IGNORE INTO character_projects (character_id, project_id) VALUES (?, ?)",
-    [characterId, projectId]
+    [characterId, projectId],
   );
 }
 
 export async function removeCharacterFromProject(
   characterId: number,
-  projectId: number
+  projectId: number,
 ): Promise<void> {
   const database = await getDb();
   await database.execute(
     "DELETE FROM character_projects WHERE character_id = ? AND project_id = ?",
-    [characterId, projectId]
+    [characterId, projectId],
   );
 }
 
 export async function getCharactersByProject(
   projectId: number,
-  showArchived = false
+  showArchived = false,
 ): Promise<Character[]> {
   const database = await getDb();
   const rows = await database.select<Character[]>(
@@ -487,7 +500,7 @@ export async function getCharactersByProject(
          JOIN character_projects cp ON c.id = cp.character_id
          WHERE cp.project_id = ? AND c.is_archived = 0
          ORDER BY c.updated_at DESC`,
-    [projectId]
+    [projectId],
   );
   return rows.map(parseCharacter);
 }
@@ -502,7 +515,7 @@ export async function createTag(tag: Partial<Tag>): Promise<number> {
   const database = await getDb();
   const result = await database.execute(
     "INSERT INTO tags (name, color) VALUES (?, ?)",
-    [tag.name || "New Tag", tag.color || "#c9a227"]
+    [tag.name || "New Tag", tag.color || "#c9a227"],
   );
   return result.lastInsertId ?? 0;
 }
@@ -523,28 +536,28 @@ export async function deleteTag(id: number): Promise<void> {
 
 export async function assignTagToCharacter(
   characterId: number,
-  tagId: number
+  tagId: number,
 ): Promise<void> {
   const database = await getDb();
   await database.execute(
     "INSERT OR IGNORE INTO character_tags (character_id, tag_id) VALUES (?, ?)",
-    [characterId, tagId]
+    [characterId, tagId],
   );
 }
 
 export async function removeTagFromCharacter(
   characterId: number,
-  tagId: number
+  tagId: number,
 ): Promise<void> {
   const database = await getDb();
   await database.execute(
     "DELETE FROM character_tags WHERE character_id = ? AND tag_id = ?",
-    [characterId, tagId]
+    [characterId, tagId],
   );
 }
 
 export async function getCharacterIdsByTags(
-  tagIds: number[]
+  tagIds: number[],
 ): Promise<number[]> {
   if (tagIds.length === 0) return [];
   const database = await getDb();
@@ -554,14 +567,14 @@ export async function getCharacterIdsByTags(
      WHERE tag_id IN (${placeholders})
      GROUP BY character_id
      HAVING COUNT(DISTINCT tag_id) = ?`,
-    [...tagIds, tagIds.length]
+    [...tagIds, tagIds.length],
   );
   return rows.map((r) => r.character_id);
 }
 
 // Relationship operations
 export async function createRelationship(
-  relationship: Partial<Relationship>
+  relationship: Partial<Relationship>,
 ): Promise<number> {
   const database = await getDb();
   const result = await database.execute(
@@ -571,7 +584,7 @@ export async function createRelationship(
       relationship.character_b_id,
       relationship.relationship_type,
       relationship.notes || null,
-    ]
+    ],
   );
   return result.lastInsertId ?? 0;
 }
@@ -582,7 +595,10 @@ export async function deleteRelationship(id: number): Promise<void> {
 }
 
 // Search
-export async function searchCharacters(query: string, showArchived = false): Promise<Character[]> {
+export async function searchCharacters(
+  query: string,
+  showArchived = false,
+): Promise<Character[]> {
   const database = await getDb();
   const searchTerm = `%${query}%`;
   const rows = await database.select<Character[]>(
@@ -622,14 +638,14 @@ export async function searchCharacters(query: string, showArchived = false): Pro
       searchTerm,
       searchTerm,
       searchTerm,
-    ]
+    ],
   );
   return rows.map(parseCharacter);
 }
 
 // Export/Import
 export async function exportAllData(): Promise<{
-  characters: Character[];
+  characters: (Character & { portrait_data?: string | null })[];
   projects: Project[];
   tags: Tag[];
   relationships: Relationship[];
@@ -639,12 +655,12 @@ export async function exportAllData(): Promise<{
   const database = await getDb();
 
   const characters = await database.select<Character[]>(
-    "SELECT * FROM characters"
+    "SELECT * FROM characters",
   );
   const projects = await database.select<Project[]>("SELECT * FROM projects");
   const tags = await database.select<Tag[]>("SELECT * FROM tags");
   const relationships = await database.select<Relationship[]>(
-    "SELECT * FROM relationships"
+    "SELECT * FROM relationships",
   );
   const character_projects = await database.select<
     { character_id: number; project_id: number }[]
@@ -653,8 +669,22 @@ export async function exportAllData(): Promise<{
     { character_id: number; tag_id: number }[]
   >("SELECT * FROM character_tags");
 
+  // Read images for characters that have one
+  const charactersWithImages = await Promise.all(
+    characters.map(parseCharacter).map(async (char) => {
+      let portrait_data: string | null = null;
+      if (char.portrait_path) {
+        portrait_data = await readImageAsBase64(char.portrait_path);
+      }
+      return {
+        ...char,
+        portrait_data,
+      };
+    }),
+  );
+
   return {
-    characters: characters.map(parseCharacter),
+    characters: charactersWithImages,
     projects,
     tags,
     relationships,
@@ -664,7 +694,7 @@ export async function exportAllData(): Promise<{
 }
 
 export async function importData(data: {
-  characters?: Partial<Character>[];
+  characters?: (Partial<Character> & { portrait_data?: string | null })[];
   projects?: Partial<Project>[];
   tags?: Partial<Tag>[];
 }): Promise<ImportResult> {
@@ -677,8 +707,12 @@ export async function importData(data: {
 
   // Import projects (check for duplicates by name)
   if (data.projects) {
-    const existingProjects = await database.select<Project[]>("SELECT name FROM projects");
-    const existingNames = new Set(existingProjects.map((p) => p.name.toLowerCase()));
+    const existingProjects = await database.select<Project[]>(
+      "SELECT name FROM projects",
+    );
+    const existingNames = new Set(
+      existingProjects.map((p) => p.name.toLowerCase()),
+    );
 
     for (const project of data.projects) {
       if (!project.name || existingNames.has(project.name.toLowerCase())) {
@@ -698,7 +732,9 @@ export async function importData(data: {
   // Import tags (check for duplicates by name)
   if (data.tags) {
     const existingTags = await database.select<Tag[]>("SELECT name FROM tags");
-    const existingNames = new Set(existingTags.map((t) => t.name.toLowerCase()));
+    const existingNames = new Set(
+      existingTags.map((t) => t.name.toLowerCase()),
+    );
 
     for (const tag of data.tags) {
       if (!tag.name || existingNames.has(tag.name.toLowerCase())) {
@@ -717,8 +753,12 @@ export async function importData(data: {
 
   // Import characters (check for duplicates by name)
   if (data.characters) {
-    const existingChars = await database.select<Character[]>("SELECT name FROM characters");
-    const existingNames = new Set(existingChars.map((c) => c.name.toLowerCase()));
+    const existingChars = await database.select<Character[]>(
+      "SELECT name FROM characters",
+    );
+    const existingNames = new Set(
+      existingChars.map((c) => c.name.toLowerCase()),
+    );
 
     for (const character of data.characters) {
       if (!character.name || existingNames.has(character.name.toLowerCase())) {
@@ -726,7 +766,28 @@ export async function importData(data: {
         continue;
       }
       try {
-        await createCharacter(character);
+        // Handle image import
+        let portrait_path = character.portrait_path;
+
+        // If we have portrait_data, import the image and update the path
+        if (character.portrait_data) {
+          try {
+            portrait_path = await saveBase64Image(character.portrait_data);
+          } catch (e) {
+            console.error("Failed to import character portrait:", e);
+            // Fallback: keep original path (likely won't work) or set to null
+            // For now let's just keep going, the image will just be missing
+          }
+        } else if (portrait_path) {
+          // If we have a path but no data, it might refer to a file on the orig system
+          // We can't do much about it, so we might want to clear it to avoid broken images
+          // But maybe the user is importing on the same system? Let's leave it.
+        }
+
+        await createCharacter({
+          ...character,
+          portrait_path,
+        });
         existingNames.add(character.name.toLowerCase());
         result.characters.imported++;
       } catch {
@@ -739,11 +800,13 @@ export async function importData(data: {
 }
 
 // Export a single character (without project/tag references to avoid import errors)
-export async function exportCharacter(id: number): Promise<Partial<Character> | null> {
+export async function exportCharacter(
+  id: number,
+): Promise<(Partial<Character> & { portrait_data?: string | null }) | null> {
   const database = await getDb();
   const rows = await database.select<Character[]>(
     "SELECT * FROM characters WHERE id = ?",
-    [id]
+    [id],
   );
 
   if (rows.length === 0) return null;
@@ -753,14 +816,23 @@ export async function exportCharacter(id: number): Promise<Partial<Character> | 
   // Remove fields that would cause issues on import
   const { id: _id, created_at, updated_at, ...exportData } = character;
 
-  return exportData;
+  // Read image data if present
+  let portrait_data: string | null = null;
+  if (exportData.portrait_path) {
+    portrait_data = await readImageAsBase64(exportData.portrait_path);
+  }
+
+  return {
+    ...exportData,
+    portrait_data,
+  };
 }
 
 // Helper to generate a UUID
 function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 }
@@ -776,34 +848,43 @@ function migratePowers(powers: unknown): Power[] {
       parsed = JSON.parse(powers);
     } catch {
       // If parsing fails, treat it as a single power name
-      return [{
-        id: generateUUID(),
-        name: powers,
-        category: "utility" as PowerCategory,
-        powerLevel: 5,
-      }];
+      return [
+        {
+          id: generateUUID(),
+          name: powers,
+          category: "utility" as PowerCategory,
+          powerLevel: 5,
+        },
+      ];
     }
   }
 
   if (!Array.isArray(parsed)) return [];
 
-  return parsed.map((power: unknown) => {
-    // Already a Power object
-    if (typeof power === "object" && power !== null && "id" in power && "name" in power) {
-      return power as Power;
-    }
-    // Old string format - migrate to Power object
-    if (typeof power === "string") {
-      return {
-        id: generateUUID(),
-        name: power,
-        category: "utility" as PowerCategory,
-        powerLevel: 5,
-      };
-    }
-    // Unknown format, skip
-    return null;
-  }).filter((p): p is Power => p !== null);
+  return parsed
+    .map((power: unknown) => {
+      // Already a Power object
+      if (
+        typeof power === "object" &&
+        power !== null &&
+        "id" in power &&
+        "name" in power
+      ) {
+        return power as Power;
+      }
+      // Old string format - migrate to Power object
+      if (typeof power === "string") {
+        return {
+          id: generateUUID(),
+          name: power,
+          category: "utility" as PowerCategory,
+          powerLevel: 5,
+        };
+      }
+      // Unknown format, skip
+      return null;
+    })
+    .filter((p): p is Power => p !== null);
 }
 
 // Helper to parse JSON fields
@@ -826,7 +907,7 @@ function parseCharacter(row: Character): Character {
     dnd_enabled: Boolean(row.dnd_enabled),
     dnd_stats: row.dnd_stats
       ? typeof row.dnd_stats === "string"
-        ? JSON.parse(row.dnd_stats) as DnDStats
+        ? (JSON.parse(row.dnd_stats) as DnDStats)
         : row.dnd_stats
       : undefined,
   };
