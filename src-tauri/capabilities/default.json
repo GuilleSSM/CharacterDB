@@ -14,7 +14,14 @@
     "fs:default",
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
-    "fs:allow-read-file",
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        }
+      ]
+    },
     {
       "identifier": "fs:allow-write-file",
       "allow": [
