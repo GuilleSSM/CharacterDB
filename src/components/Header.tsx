@@ -17,12 +17,7 @@ import {
   MoonIcon,
 } from "./icons";
 import { save, open, message } from "@tauri-apps/plugin-dialog";
-import {
-  writeTextFile,
-  readTextFile,
-  writeFile,
-  readFile,
-} from "@tauri-apps/plugin-fs";
+import { readTextFile, writeFile, readFile } from "@tauri-apps/plugin-fs";
 
 export function Header() {
   const {
