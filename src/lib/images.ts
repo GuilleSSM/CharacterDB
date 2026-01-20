@@ -1,5 +1,11 @@
 import { open } from "@tauri-apps/plugin-dialog";
-import { readFile, writeFile, mkdir, exists } from "@tauri-apps/plugin-fs";
+import {
+  readFile,
+  writeFile,
+  mkdir,
+  exists,
+  remove,
+} from "@tauri-apps/plugin-fs";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { convertFileSrc } from "@tauri-apps/api/core";
 
@@ -284,4 +290,17 @@ export async function saveImageFromBuffer(
 
   // Return asset URL
   return convertFileSrc(destPath);
+}
+
+// Delete an image file given its asset URL
+export async function deleteImage(assetUrl: string): Promise<void> {
+  try {
+    const filePath = pathFromAssetUrl(assetUrl);
+
+    if (await exists(filePath)) {
+      await remove(filePath);
+    }
+  } catch (error) {
+    console.error(`Failed to delete image ${assetUrl}:`, error);
+  }
 }

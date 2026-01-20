@@ -69,6 +69,14 @@
         }
       ]
     },
+    {
+      "identifier": "fs:allow-remove",
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        }
+      ]
+    },
     "sql:default",
     "sql:allow-load",
     "sql:allow-execute",

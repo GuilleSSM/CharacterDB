@@ -10,7 +10,7 @@ import type {
   PowerCategory,
   DnDStats,
 } from "../types";
-import { readImageAsBase64, saveBase64Image } from "./images";
+import { readImageAsBase64, saveBase64Image, deleteImage } from "./images";
 
 let db: Database | null = null;
 
@@ -399,6 +399,26 @@ export async function updateCharacter(
 
   if (fields.length === 0) return;
 
+  // Check for portrait replacement to delete the old one
+  if ("portrait_path" in character) {
+    try {
+      const rows = await database.select<Character[]>(
+        "SELECT portrait_path FROM characters WHERE id = ?",
+        [id],
+      );
+      if (
+        rows.length > 0 &&
+        rows[0].portrait_path &&
+        rows[0].portrait_path !== character.portrait_path
+      ) {
+        // Delete the old portrait file
+        await deleteImage(rows[0].portrait_path);
+      }
+    } catch (error) {
+      console.error("Failed to cleanup old portrait:", error);
+    }
+  }
+
   fields.push("updated_at = CURRENT_TIMESTAMP");
   values.push(id);
 
@@ -410,6 +430,20 @@ export async function updateCharacter(
 
 export async function deleteCharacter(id: number): Promise<void> {
   const database = await getDb();
+
+  // Get portrait path before deletion to clean up the file
+  try {
+    const rows = await database.select<Character[]>(
+      "SELECT portrait_path FROM characters WHERE id = ?",
+      [id],
+    );
+    if (rows.length > 0 && rows[0].portrait_path) {
+      await deleteImage(rows[0].portrait_path);
+    }
+  } catch (error) {
+    console.error("Failed to cleanup character portrait:", error);
+  }
+
   await database.execute("DELETE FROM characters WHERE id = ?", [id]);
 }
 
