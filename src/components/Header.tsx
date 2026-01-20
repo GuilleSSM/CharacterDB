@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import JSZip from "jszip";
 import { useStore } from "../stores/useStore";
 import { getModifierKey } from "../lib/platform";
+import { readImageAsArrayBuffer, saveImageFromBuffer } from "../lib/images";
 import {
   MagnifyingGlassIcon,
   Squares2X2Icon,
@@ -15,7 +17,7 @@ import {
   MoonIcon,
 } from "./icons";
 import { save, open, message } from "@tauri-apps/plugin-dialog";
-import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
+import { readTextFile, writeFile, readFile } from "@tauri-apps/plugin-fs";
 
 export function Header() {
   const {
@@ -42,7 +44,10 @@ export function Header() {
   // Close menus when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
+      if (
+        sortMenuRef.current &&
+        !sortMenuRef.current.contains(event.target as Node)
+      ) {
         setShowSortMenu(false);
       }
     }
@@ -71,68 +76,200 @@ export function Header() {
 
   const handleExport = useCallback(async () => {
     try {
-      const data = await exportData();
+      // 1. Get raw data (no embedded images)
+      const dataString = await exportData();
+      const data = JSON.parse(dataString);
+
+      const zip = new JSZip();
+
+      // 2. Add data.json
+      zip.file("data.json", JSON.stringify(data, null, 2));
+
+      // 3. Find and add images
+      const portraitsFolder = zip.folder("portraits");
+      const processedCharacters = await Promise.all(
+        data.characters.map(async (char: any) => {
+          if (char.portrait_path) {
+            try {
+              const buffer = await readImageAsArrayBuffer(char.portrait_path);
+              if (buffer) {
+                // Generate a clean filename for the zip
+                const ext = char.portrait_path.split(".").pop() || "png";
+                // Use ID to ensure uniqueness in zip
+                const filename = `${char.id}_${Date.now()}.${ext}`;
+                portraitsFolder?.file(filename, buffer);
+
+                // Update the path in the JSON to be relative
+                return {
+                  ...char,
+                  portrait_path: `portraits/${filename}`,
+                };
+              }
+            } catch (e) {
+              console.error(`Failed to include image for char ${char.id}`, e);
+            }
+          }
+          return char;
+        }),
+      );
+
+      // 4. Update characters in the data.json we just wrote?
+      // Actually we need to write the UPDATED data.json
+      // Let's overwrite the data.json with the one containing relative paths
+      const updatedData = { ...data, characters: processedCharacters };
+      zip.file("data.json", JSON.stringify(updatedData, null, 2));
+
+      // 5. Generate ZIP
+      const zipContent = await zip.generateAsync({ type: "uint8array" });
+
+      // 6. Save file
       const filePath = await save({
-        filters: [{ name: "JSON", extensions: ["json"] }],
-        defaultPath: "characters-export.json",
+        filters: [{ name: "CharacterDB Backup", extensions: ["zip"] }],
+        defaultPath: "characterdb-backup.zip",
       });
+
       if (filePath) {
-        await writeTextFile(filePath, data);
+        await writeFile(filePath, zipContent);
+        await message("Export completed successfully!", {
+          title: "Export",
+          kind: "info",
+        });
       }
     } catch (error) {
       console.error("Export failed:", error);
+      await message(`Export failed: ${error}`, {
+        title: "Error",
+        kind: "error",
+      });
     }
   }, [exportData]);
 
   const handleImport = useCallback(async () => {
     try {
-      const filePath = await open({
-        filters: [{ name: "JSON", extensions: ["json"] }],
+      const selected = await open({
+        filters: [
+          { name: "CharacterDB Files", extensions: ["json", "zip"] },
+          { name: "All Files", extensions: ["*"] },
+        ],
         multiple: false,
       });
-      if (filePath) {
-        const content = await readTextFile(filePath as string);
-        const result = await importData(content);
 
-        // Build feedback message
-        const lines: string[] = [];
-        const { characters, projects, tags } = result;
+      if (!selected) return;
 
-        if (characters.imported > 0 || characters.duplicates > 0 || characters.errors > 0) {
-          lines.push(
-            `Characters: ${characters.imported} imported, ${characters.duplicates} duplicates skipped, ${characters.errors} errors`
-          );
-        }
-        if (projects.imported > 0 || projects.duplicates > 0 || projects.errors > 0) {
-          lines.push(
-            `Projects: ${projects.imported} imported, ${projects.duplicates} duplicates skipped, ${projects.errors} errors`
-          );
-        }
-        if (tags.imported > 0 || tags.duplicates > 0 || tags.errors > 0) {
-          lines.push(
-            `Tags: ${tags.imported} imported, ${tags.duplicates} duplicates skipped, ${tags.errors} errors`
-          );
+      const filePath = selected as string;
+      const isZip = filePath.toLowerCase().endsWith(".zip");
+
+      let importResult;
+
+      if (isZip) {
+        // Handle ZIP import
+        const fileContent = await readFile(filePath);
+        const zip = await JSZip.loadAsync(fileContent);
+
+        // Read data.json
+        const dataJsonFile = zip.file("data.json");
+        if (!dataJsonFile) {
+          throw new Error("Invalid backup: data.json mismatch");
         }
 
-        const totalImported = characters.imported + projects.imported + tags.imported;
-        const totalDuplicates = characters.duplicates + projects.duplicates + tags.duplicates;
-        const totalErrors = characters.errors + projects.errors + tags.errors;
+        const jsonContent = await dataJsonFile.async("string");
+        const data = JSON.parse(jsonContent);
 
-        if (lines.length === 0) {
-          await message("No data was found in the file.", { title: "Import Complete", kind: "info" });
-        } else {
-          const summary = totalErrors > 0
+        // Process images
+        if (data.characters) {
+          data.characters = await Promise.all(
+            data.characters.map(async (char: any) => {
+              // Check if it has a relative portrait path like "portraits/..."
+              if (
+                char.portrait_path &&
+                !char.portrait_path.startsWith("asset://") &&
+                !char.portrait_path.startsWith("/") &&
+                !char.portrait_path.includes(":")
+              ) {
+                // Try to extract it
+                const imageFile = zip.file(char.portrait_path);
+                if (imageFile) {
+                  const buffer = await imageFile.async("arraybuffer");
+                  // Save to local portraits dir
+                  const newPath = await saveImageFromBuffer(
+                    buffer,
+                    char.portrait_path,
+                  );
+                  return { ...char, portrait_path: newPath };
+                }
+              }
+              return char;
+            }),
+          );
+        }
+
+        importResult = await importData(JSON.stringify(data));
+      } else {
+        // Handle JSON import (legacy/single)
+        const content = await readTextFile(filePath);
+        importResult = await importData(content);
+      }
+
+      const result = importResult;
+
+      // Build feedback message
+      const lines: string[] = [];
+      const { characters, projects, tags } = result;
+
+      if (
+        characters.imported > 0 ||
+        characters.duplicates > 0 ||
+        characters.errors > 0
+      ) {
+        lines.push(
+          `Characters: ${characters.imported} imported, ${characters.duplicates} duplicates skipped, ${characters.errors} errors`,
+        );
+      }
+      if (
+        projects.imported > 0 ||
+        projects.duplicates > 0 ||
+        projects.errors > 0
+      ) {
+        lines.push(
+          `Projects: ${projects.imported} imported, ${projects.duplicates} duplicates skipped, ${projects.errors} errors`,
+        );
+      }
+      if (tags.imported > 0 || tags.duplicates > 0 || tags.errors > 0) {
+        lines.push(
+          `Tags: ${tags.imported} imported, ${tags.duplicates} duplicates skipped, ${tags.errors} errors`,
+        );
+      }
+
+      const totalImported =
+        characters.imported + projects.imported + tags.imported;
+      const totalDuplicates =
+        characters.duplicates + projects.duplicates + tags.duplicates;
+      const totalErrors = characters.errors + projects.errors + tags.errors;
+
+      if (lines.length === 0) {
+        await message("No data was found in the file.", {
+          title: "Import Complete",
+          kind: "info",
+        });
+      } else {
+        const summary =
+          totalErrors > 0
             ? `Import completed with ${totalErrors} error(s).`
             : totalDuplicates > 0
-            ? `Import completed. ${totalImported} item(s) imported, ${totalDuplicates} duplicate(s) skipped.`
-            : `Import completed. ${totalImported} item(s) imported successfully.`;
+              ? `Import completed. ${totalImported} item(s) imported, ${totalDuplicates} duplicate(s) skipped.`
+              : `Import completed. ${totalImported} item(s) imported successfully.`;
 
-          await message(`${summary}\n\n${lines.join("\n")}`, { title: "Import Results", kind: "info" });
-        }
+        await message(`${summary}\n\n${lines.join("\n")}`, {
+          title: "Import Results",
+          kind: "info",
+        });
       }
     } catch (error) {
       console.error("Import failed:", error);
-      await message("Failed to import data. Please check the file format.", { title: "Import Error", kind: "error" });
+      await message("Failed to import data. Please check the file format.", {
+        title: "Import Error",
+        kind: "error",
+      });
     }
   }, [importData]);
 
@@ -179,8 +316,10 @@ export function Header() {
               <XMarkIcon className="w-4 h-4 text-ink-500 dark:text-ink-400" />
             </button>
           ) : (
-            <kbd className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono
-                           text-ink-400 dark:text-ink-500 bg-parchment-200 dark:bg-ink-800 rounded border border-ink-200 dark:border-ink-700">
+            <kbd
+              className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono
+                           text-ink-400 dark:text-ink-500 bg-parchment-200 dark:bg-ink-800 rounded border border-ink-200 dark:border-ink-700"
+            >
               <span className="text-xs">{getModifierKey()}</span>K
             </kbd>
           )}

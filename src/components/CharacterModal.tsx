@@ -96,6 +96,18 @@ export function CharacterModal() {
     }
   }, [selectedCharacter]);
 
+  // Refs to track latest state for unmount cleanup
+  const pendingChangesRef = useRef(pendingChanges);
+  const selectedCharacterRef = useRef(selectedCharacter);
+
+  useEffect(() => {
+    pendingChangesRef.current = pendingChanges;
+  }, [pendingChanges]);
+
+  useEffect(() => {
+    selectedCharacterRef.current = selectedCharacter;
+  }, [selectedCharacter]);
+
   // Auto-save with debounce - only save the fields that actually changed
   useEffect(() => {
     if (Object.keys(pendingChanges).length === 0 || !selectedCharacter) return;
@@ -111,6 +123,21 @@ export function CharacterModal() {
 
     return () => clearTimeout(timeout);
   }, [pendingChanges, selectedCharacter, updateCharacter]);
+
+  // Save pending changes on unmount
+  useEffect(() => {
+    return () => {
+      const pending = pendingChangesRef.current;
+      const character = selectedCharacterRef.current;
+
+      if (Object.keys(pending).length > 0 && character) {
+        // Fire and forget save
+        updateCharacter(character.id, pending).catch((err) =>
+          console.error("Failed to save character on close:", err),
+        );
+      }
+    };
+  }, [updateCharacter]);
 
   const handleChange = useCallback(
     (field: keyof CharacterWithRelations, value: unknown) => {
@@ -1633,7 +1660,9 @@ function RelationshipsTab({
     c.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const selectedCharacter = characters.find((c) => c.id === selectedCharacterId);
+  const selectedCharacter = characters.find(
+    (c) => c.id === selectedCharacterId,
+  );
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -1706,7 +1735,11 @@ function RelationshipsTab({
                   <div className="relative">
                     <input
                       type="text"
-                      value={isDropdownOpen ? searchQuery : selectedCharacter?.name || ""}
+                      value={
+                        isDropdownOpen
+                          ? searchQuery
+                          : selectedCharacter?.name || ""
+                      }
                       onChange={(e) => {
                         setSearchQuery(e.target.value);
                         setIsDropdownOpen(true);
