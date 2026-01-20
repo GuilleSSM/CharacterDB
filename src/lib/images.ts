@@ -245,3 +245,43 @@ export async function saveBase64Image(base64Data: string): Promise<string> {
   // Return asset URL
   return convertFileSrc(destPath);
 }
+
+// Read an image file and return as ArrayBuffer
+export async function readImageAsArrayBuffer(
+  assetUrl: string,
+): Promise<ArrayBuffer | null> {
+  try {
+    const filePath = pathFromAssetUrl(assetUrl);
+
+    if (!(await exists(filePath))) {
+      return null;
+    }
+
+    const contents = await readFile(filePath);
+    return contents.buffer;
+  } catch (error) {
+    console.error(`Failed to read image ${assetUrl}:`, error);
+    return null;
+  }
+}
+
+// Save an ArrayBuffer as an image file and return the new asset URL
+export async function saveImageFromBuffer(
+  buffer: ArrayBuffer,
+  filename: string,
+): Promise<string> {
+  const contents = new Uint8Array(buffer);
+
+  // Ensure directory exists
+  const imagesDir = await ensureImagesDir();
+
+  // Clean filename just in case, though jszip names should be relative
+  const safeFilename = filename.split("/").pop() || filename;
+  const destPath = await join(imagesDir, safeFilename);
+
+  // Write file
+  await writeFile(destPath, contents);
+
+  // Return asset URL
+  return convertFileSrc(destPath);
+}

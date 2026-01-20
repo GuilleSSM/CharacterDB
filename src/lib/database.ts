@@ -645,7 +645,7 @@ export async function searchCharacters(
 
 // Export/Import
 export async function exportAllData(): Promise<{
-  characters: (Character & { portrait_data?: string | null })[];
+  characters: Character[];
   projects: Project[];
   tags: Tag[];
   relationships: Relationship[];
@@ -669,22 +669,8 @@ export async function exportAllData(): Promise<{
     { character_id: number; tag_id: number }[]
   >("SELECT * FROM character_tags");
 
-  // Read images for characters that have one
-  const charactersWithImages = await Promise.all(
-    characters.map(parseCharacter).map(async (char) => {
-      let portrait_data: string | null = null;
-      if (char.portrait_path) {
-        portrait_data = await readImageAsBase64(char.portrait_path);
-      }
-      return {
-        ...char,
-        portrait_data,
-      };
-    }),
-  );
-
   return {
-    characters: charactersWithImages,
+    characters: characters.map(parseCharacter),
     projects,
     tags,
     relationships,
